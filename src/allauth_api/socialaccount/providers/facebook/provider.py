@@ -3,8 +3,7 @@ from allauth_api.socialaccount.providers.base import Provider
 
 
 class FacebookProvider(Provider):
-    # TODO
-    pass
+    id = 'facebook'
 
 
 registry.register(FacebookProvider)

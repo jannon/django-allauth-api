@@ -37,7 +37,8 @@ DEFAULTS = {
     'PROVIDER_MODULES': [
         'allauth_api.socialaccount.providers.facebook'
     ],
-    'REGISTER_VIEW_PERMISSIONS': ()
+    'REGISTER_VIEW_PERMISSIONS': (),
+    'API_FRAMEWORK': 'rest_framework',
 }
 
 

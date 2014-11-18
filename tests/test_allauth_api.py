@@ -16,11 +16,12 @@ from django.contrib.auth.models import AnonymousUser
 
 from allauth.utils import get_user_model
 
-from allauth_api import app_settings
+from allauth import app_settings
+from allauth_api.settings import allauth_api_settings
 
 from allauth.account.adapter import get_adapter as account_adapter
 from allauth.socialaccount.adapter import get_adapter as social_account_adapter
-from billiard.tests.utils import Case
+#from billiard.tests.utils import Case
 
 User = get_user_model()
 
