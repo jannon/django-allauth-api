@@ -1,5 +1,13 @@
-
-Authors
+=======
+Credits
 =======
 
-* Jannon Frank - http://jannon.net
+Development Lead
+----------------
+
+* Jannon Frank <jannon@jannon.net>
+
+Contributors
+------------
+
+None yet. Why not be the first?

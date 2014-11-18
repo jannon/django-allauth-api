@@ -1,3 +1,5 @@
+from django.utils.translation import ugettext as _
+
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT,\
     HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
@@ -13,6 +15,7 @@ from .utils import complete_signup
 from allauth.account.adapter import get_adapter
 
 User = get_user_model()
+
 
 class AlreadyLoggedInMixin(object):
     """
@@ -65,7 +68,7 @@ class CloseableSignupMixin(object):
         return get_adapter().is_open_for_signup(self.request)
 
     def closed(self):
-        return Response({"message": "Registration is closed"}, HTTP_403_FORBIDDEN)
+        return Response({"message": _("Registration is closed")}, HTTP_403_FORBIDDEN)
 
 
 class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
@@ -86,7 +89,7 @@ class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
 
     def post(self, request, *args, **kwargs):
         if self.login_handler is None:
-            return Response({"No login handler found"}, HTTP_400_BAD_REQUEST)
+            return Response({"message": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.login(request, *args, **kwargs)
 
 login = LoginView.as_view()
@@ -101,7 +104,7 @@ class LogoutView(LoginHandlerMixin, APIView):
 
     def post(self, request, *args, **kwargs):
         if self.login_handler is None:
-            return Response({"No login handler found"}, HTTP_400_BAD_REQUEST)
+            return Response({"message": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.logout(request, *args, **kwargs)
 
 logout = LogoutView.as_view()

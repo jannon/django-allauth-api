@@ -16,7 +16,7 @@ from django.contrib.auth.models import AnonymousUser
 
 from allauth.utils import get_user_model
 
-from . import app_settings
+from allauth_api import app_settings
 
 from allauth.account.adapter import get_adapter as account_adapter
 from allauth.socialaccount.adapter import get_adapter as social_account_adapter
@@ -59,11 +59,12 @@ class BaseAccountsTest(TestCase):
         test_methods = list(set(ALL_METHODS) - set(self.get_allowed_methods()))
         test_url = self.get_endpoint()
         
-        
+        for method in test_methods:
+            pass
     
     def test_unauthorized_access(self):
         pass
 
 
 class ProvidersTest(BaseAccountsTest):
-    allowed_methods = ['OPTIONS', 'HEAD', 'GET'] 
+    allowed_methods = ['OPTIONS', 'HEAD', 'GET']

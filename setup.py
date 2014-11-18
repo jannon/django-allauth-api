@@ -33,7 +33,8 @@ setup(
     zip_safe=False,
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 2 - Pre-Alpha",
+        "Natural Language :: English", 
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: Unix",
@@ -58,10 +59,4 @@ setup(
     extras_require={
         # eg: 'rst': ["docutils>=0.11"],
     },
-    entry_points={
-        "console_scripts": [
-            "allauth_api = allauth_api.__main__:main"
-        ]
-    }
-
 )
