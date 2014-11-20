@@ -4,10 +4,10 @@ from allauth_api.settings import allauth_api_settings
 
 api_mod_name = allauth_api_settings.API_FRAMEWORK
 
-urlpatterns = patterns('', url('^', include('allauth_api.account.' + api_mod_name + '.urls')))
+urlpatterns = patterns("", url(r"^", include('allauth_api.account.' + api_mod_name + '.urls')))
 
 if app_settings.SOCIALACCOUNT_ENABLED:
-    urlpatterns += patterns('', url('^social/',
+    urlpatterns += patterns("", url(r"^social/",
                                     include('allauth_api.socialaccount.' + api_mod_name + '.urls')))
 
 # for provider in providers.registry.get_list():

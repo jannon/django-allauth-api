@@ -22,7 +22,7 @@ def pytest_configure():
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
         ),
-       TEMPLATE_CONTEXT_PROCESSORS = (
+        TEMPLATE_CONTEXT_PROCESSORS = (
             'django.contrib.auth.context_processors.auth',
             # Required by allauth template tags
             'django.core.context_processors.request',
@@ -53,6 +53,53 @@ def pytest_configure():
             'django.contrib.auth.hashers.MD5PasswordHasher',
             'django.contrib.auth.hashers.CryptPasswordHasher',
         ),
+        ACCOUNT_ADAPTER = 'tests.accountadapter.TestAccountAdapter',
+        LOGGING = {
+            'version': 1,
+            'disable_existing_loggers': False,
+            'handlers': {
+                'console': {
+                    'level': 'INFO',
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'verbose',
+                },
+                'logfile': {
+                    'level': 'INFO',
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'filename': '/Users/jannon/projects/django-allauth-api/tests/tests.log',
+                    'maxBytes': 50000,
+                    'backupCount': 1,
+                    'formatter': 'verbose',
+                }
+            },
+            'formatters': {
+                'verbose': {
+                    'format': (
+                        '%(asctime)s [%(process)d] [%(levelname)s] ' +
+                        'pathname=%(pathname)s lineno=%(lineno)s ' +
+                        'funcname=%(funcName)s %(message)s'),
+                    'datefmt': '%Y-%m-%d %H:%M:%S'
+                },
+                'simple': {
+                    'format': '%(levelname)s %(message)s',
+                },
+            },
+            'loggers': {
+                '': {
+                    'handlers': ['console', 'logfile'],
+                }
+            }
+        },
+        AUTHENTICATION_BACKENDS = (
+            "django.contrib.auth.backends.ModelBackend",
+            "allauth.account.auth_backends.AuthenticationBackend",
+        ),
+        REST_FRAMEWORK = {
+            'DEFAULT_AUTHENTICATION_CLASSES': (
+                'oauth2_provider.ext.rest_framework.OAuth2Authentication',
+                'rest_framework.authentication.SessionAuthentication',
+            )
+        },
     )
 
     try:

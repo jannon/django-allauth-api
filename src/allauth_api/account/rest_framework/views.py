@@ -16,6 +16,9 @@ from allauth.account.adapter import get_adapter
 
 User = get_user_model()
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class AlreadyLoggedInMixin(object):
     """
@@ -39,17 +42,17 @@ class LoginHandlerMixin(object):
     Mixin providing common functionality to set login(out) handler
     """
 
-    def dispatch(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         self.login_handler = None
         login_type = request.DATA.get('login_type',
                                       allauth_api_settings.DEFAULT_DRF_LOGIN_TYPE)
-        login_class = allauth_api_settings['DEFAULT_DRF_LOGIN_CLASSES'][login_type]
+        login_class = allauth_api_settings.DEFAULT_DRF_LOGIN_CLASSES[login_type]
 
         if not login_class:
             return Response({"error": "invalid login type: %s" % login_type}, HTTP_400_BAD_REQUEST)
 
         self.login_handler = login_class()
-        return super(LoginHandlerMixin, self).dispatch(request, *args, **kwargs)
+        return self.handle_login_logout(request, *args, **kwargs)
 
 
 class CloseableSignupMixin(object):
@@ -87,7 +90,7 @@ class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
 
     permission_classes = (AllowAny,)
 
-    def post(self, request, *args, **kwargs):
+    def handle_login_logout(self, request, *args, **kwargs):
         if self.login_handler is None:
             return Response({"message": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.login(request, *args, **kwargs)
@@ -102,7 +105,7 @@ class LogoutView(LoginHandlerMixin, APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, *args, **kwargs):
+    def handle_login_logout(self, request, *args, **kwargs):
         if self.login_handler is None:
             return Response({"message": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.logout(request, *args, **kwargs)

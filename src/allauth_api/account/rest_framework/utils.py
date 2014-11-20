@@ -1,8 +1,8 @@
+from django.conf import settings
 from allauth.account.app_settings import EmailVerificationMethod
 from allauth.account.utils import send_email_confirmation, get_adapter, messages, signals
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
-from allauth_api.settings import allauth_api_settings
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -24,7 +24,7 @@ class RestFrameworkTokenGenerator(BaseTokenGenerator):
     """
 
     def __init__(self):
-        if 'rest_framework.authtoken' not in allauth_api_settings.INSTALLED_APPS:
+        if 'rest_framework.authtoken' not in settings.INSTALLED_APPS:
             raise ImproperlyConfigured('rest_framework.auth_token must be in installed_apps')
 
     def get_token(self, user):
@@ -43,7 +43,8 @@ class RestFrameworkTokenGenerator(BaseTokenGenerator):
             token.delete()
 
 
-def perform_login(request, user, email_verification, signal_kwargs={}, signup=False):
+def perform_login(request, user, email_verification, return_data={}, signal_kwargs={},
+                  signup=False):
     """
     Keyword arguments:
 
@@ -81,7 +82,8 @@ def perform_login(request, user, email_verification, signal_kwargs={}, signup=Fa
                               'account/messages/logged_in.txt',
                               {'user': user})
 
-    return Response({'message': 'User logged in.'}, HTTP_200_OK)
+    return_data.update({'message': 'User logged in.'})
+    return Response(return_data, HTTP_200_OK)
 
 
 def complete_signup(request, user, email_verification, signal_kwargs={}):
@@ -93,3 +95,16 @@ def complete_signup(request, user, email_verification, signal_kwargs={}):
                          email_verification=email_verification,
                          signup=True,
                          signal_kwargs=signal_kwargs)
+
+
+def serializer_error_string(errors):
+    errlist = []
+
+    for k in errors:
+        if k == 'non_field_errors':
+            for v in errors[k]:
+                errlist.append(v)
+        else:
+            for v in errors[k]:
+                errlist.append("%s - %s" % (k, v))
+    return "\n".join(errlist)

@@ -5,8 +5,8 @@ from rest_framework import serializers
 
 
 class UserPassSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    email = serializers.CharField()
+    username = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
     password = serializers.CharField()
 
     def validate(self, attrs):
@@ -15,7 +15,13 @@ class UserPassSerializer(serializers.Serializer):
         email = attrs.get('email')
 
         if password and (username or email):
-            user = authenticate(username=username, email=email, password=password)
+            kwargs = {"password": password}
+            if username is not None:
+                kwargs["username"] = username
+            if email is not None:
+                kwargs["email"] = email
+
+            user = authenticate(**kwargs)
 
             if user:
                 if not user.is_active:
@@ -27,5 +33,5 @@ class UserPassSerializer(serializers.Serializer):
                 msg = _('Unable to login with provided credentials.')
                 raise serializers.ValidationError(msg)
         else:
-            msg = _('Must include "username" or "email", and "password"')
+            msg = _('Must include "username" or "email", and "password".')
             raise serializers.ValidationError(msg)

@@ -5,20 +5,26 @@ from rest_framework.response import Response
 from rest_framework.authentication import BaseAuthentication, BasicAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from allauth import app_settings
+from allauth.account import app_settings
 
-from .utils import perform_login, RestFrameworkTokenGenerator
+from .utils import perform_login, RestFrameworkTokenGenerator, serializer_error_string
 from .serializers import UserPassSerializer
+
 from oauth2_provider.views.base import TokenView  # , RevokeTokenView
 
+import logging
+logger = logging.getLogger(__name__)
 
-class AllAuthMixin(BaseAuthentication):
+
+class AllAuthMixin(object):
 
     def authenticate(self, request):
         input_data = self.get_input_data(request)
         serializer = self.serializer_class(data=input_data)
         if serializer.is_valid():
             return (serializer.object['user'], None)
+        else:
+            raise AuthenticationFailed(serializer_error_string(serializer.errors))
 
 
 class HeaderDataAuthentication(AllAuthMixin, BaseAuthentication):
@@ -48,13 +54,13 @@ class UserPassAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
         try:
-            user, auth = BasicAuthentication().authenticate(request)
+            result = BasicAuthentication().authenticate(request)
         except AuthenticationFailed:
             pass
 
-        if user is None:
-            user, auth = PostDataAuthentication().authenticate(request)
-        return user, auth
+        if result is None:
+            result = PostDataAuthentication().authenticate(request)
+        return result
 
 
 class BaseLogin(object):
@@ -65,11 +71,12 @@ class BaseLogin(object):
     auth_class = BaseAuthentication
 
     def login(self, request, *args, **kwargs):
+        logger.debug("BaseLogin")
         user = None
         try:
             user, _ = self.authenticate(request)
         except AuthenticationFailed as err:
-            return Response({'message': err.msg}, err.status_code)
+            return Response({'message': err.detail}, err.status_code)
 
         if user is not None:
             return perform_login(request, user, email_verification=app_settings.EMAIL_VERIFICATION,
@@ -84,10 +91,10 @@ class BaseLogin(object):
     def authenticate(self, request, **kwargs):
         return self.auth_class().authenticate(request)
 
-    def get_return_data(self, request, user):
+    def get_signal_kwargs(self, request, user):
         return {}
 
-    def get_signal_kwargs(self, request, user):
+    def get_return_data(self, request, user):
         return {}
 
 
@@ -108,7 +115,7 @@ class TokenLogin(BasicLogin):
     token_generator_class = RestFrameworkTokenGenerator
 
     def get_return_data(self, request, user):
-        return {'token': self.token_generator_class().get_token(user)}
+        return {'token': self.token_generator_class().get_token(user).key}
 
     def logout(self, request, **kwargs):
         self.token_generator_class().revoke_token(request)
@@ -123,7 +130,9 @@ class OAuth2Login(BaseLogin):
     """
 
     def login(self, request, *args, **kwargs):
-        return TokenView(request, *args, **kwargs)
+        logger.debug("OAuth2Login")
+        view = TokenView.as_view()
+        return view(request, *args, **kwargs)
 
     def logout(self, request, **kwargs):
         # TODO: uncomment when update django-oauth-toolkit (only repo has revoke token right now)

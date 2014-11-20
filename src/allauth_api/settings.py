@@ -24,8 +24,8 @@ USER_SETTINGS = getattr(settings, 'ALLAUTH_API', None)
 DEFAULTS = {
     'DEFAULT_DRF_LOGIN_TYPE': 'oauth2',
     'DEFAULT_DRF_LOGIN_CLASSES': {
-        'basic': 'allauth_api.account.rest_frmework.authentication.BasicLogin',
-        'session': 'allauth_api.account.rest_frmework.authentication.BasicLogin',
+        'basic': 'allauth_api.account.rest_framework.authentication.BasicLogin',
+        'session': 'allauth_api.account.rest_framework.authentication.BasicLogin',
         'token': 'allauth_api.account.rest_framework.authentication.TokenLogin',
         'oauth2': 'allauth_api.account.rest_framework.authentication.OAuth2Login',
         'social_basic': 'allauth_api.socialaccount.rest_framework.authentication.BasicLogin',
@@ -45,6 +45,7 @@ DEFAULTS = {
 # List of settings that may be in string import notation.
 IMPORT_STRINGS = (
     'DEFAULT_DRF_AUTHENTICATION_CLASSES',
+    'DEFAULT_DRF_LOGIN_CLASSES'
 )
 
 
@@ -59,7 +60,7 @@ def perform_import(val, setting_name):
         return [import_from_string(item, setting_name) for item in val]
     elif isinstance(val, dict):
         new_val = {}
-        for k, v in val:
+        for k, v in val.items():
             new_val[k] = import_from_string(v, setting_name)
         val = new_val
     return val
