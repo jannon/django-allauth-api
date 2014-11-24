@@ -1,10 +1,8 @@
 from django.utils.translation import ugettext as _
 
-from rest_framework.views import APIView
 from rest_framework.status import HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT,\
     HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from allauth.account.forms import SignupForm, ChangePasswordForm
 from allauth.account import app_settings, signals
@@ -18,6 +16,8 @@ User = get_user_model()
 
 import logging
 logger = logging.getLogger(__name__)
+
+APIView = allauth_api_settings.DRF_API_VIEW
 
 
 class AlreadyLoggedInMixin(object):
@@ -45,8 +45,8 @@ class LoginHandlerMixin(object):
     def post(self, request, *args, **kwargs):
         self.login_handler = None
         login_type = request.DATA.get('login_type',
-                                      allauth_api_settings.DEFAULT_DRF_LOGIN_TYPE)
-        login_class = allauth_api_settings.DEFAULT_DRF_LOGIN_CLASSES[login_type]
+                                      allauth_api_settings.DRF_LOGIN_TYPE)
+        login_class = allauth_api_settings.DRF_LOGIN_CLASSES[login_type]
 
         if not login_class:
             return Response({"error": "invalid login type: %s" % login_type}, HTTP_400_BAD_REQUEST)
@@ -88,7 +88,7 @@ class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
     social_* - like all the above, but credentials are 3rd-party auth tokens
     """
 
-    permission_classes = (AllowAny,)
+    permission_classes = allauth_api_settings.DRF_LOGIN_VIEW_PERMISSIONS
 
     def handle_login_logout(self, request, *args, **kwargs):
         if self.login_handler is None:
@@ -103,7 +103,7 @@ class LogoutView(LoginHandlerMixin, APIView):
     Logs a user out.
     """
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = allauth_api_settings.DRF_LOGOUT_VIEW_PERMISSIONS
 
     def handle_login_logout(self, request, *args, **kwargs):
         if self.login_handler is None:
@@ -118,6 +118,7 @@ class RegisterView(CloseableSignupMixin, APIView):
     Registers a new user
     """
 
+    permission_classes = allauth_api_settings.DRF_REGISTER_VIEW_PERMISSIONS
     form_class = SignupForm
 
     def get_form_class(self):
@@ -128,7 +129,7 @@ class RegisterView(CloseableSignupMixin, APIView):
         form = fc(data=request.DATA, files=request.FILES)
         if form.is_valid():
             user = form.save(request)
-            return complete_signup(self.request, user, app_settings.EMAIL_VERIFICATION)
+            return complete_signup(self.request, user)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
 
 register = RegisterView.as_view()
@@ -139,6 +140,7 @@ class ChangePasswordView(APIView):
     Sets a user's password
     """
 
+    permission_classes = allauth_api_settings.DRF_PASSWORD_VIEW_PERMISSIONS
     form_class = ChangePasswordForm
 
     def post(self, request, format=None):
@@ -159,6 +161,8 @@ class RegistrationCheckView(APIView):
     """
     Check if the given user identifier belongs to a registered user
     """
+
+    permission_classes = allauth_api_settings.DRF_REGISTRATIONS_VIEW_PERMISSIONS
 
     def get(self, request, user_id):
         try:

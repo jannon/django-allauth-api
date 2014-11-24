@@ -86,7 +86,9 @@ def pytest_configure():
             },
             'loggers': {
                 '': {
-                    'handlers': ['console', 'logfile'],
+                     # mainly for debugging tests since with tox all output doesn't always show up
+                     # 'handlers': ['console', 'logfile'], 
+                    'handlers': ['console', ],
                 }
             }
         },

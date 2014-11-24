@@ -1,4 +1,3 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from allauth.socialaccount import providers
@@ -12,6 +11,9 @@ from allauth.socialaccount.models import SocialLogin
 from allauth.socialaccount.forms import SignupForm
 from allauth.socialaccount.helpers import complete_social_signup
 from rest_framework.status import HTTP_400_BAD_REQUEST
+from allauth_api.settings import allauth_api_settings
+
+APIView = allauth_api_settings.DRF_API_VIEW
 
 
 class RegisterView(CloseableSignupMixin, APIView):
@@ -19,6 +21,7 @@ class RegisterView(CloseableSignupMixin, APIView):
     Register users who use 3rd-party authentication (e.g. Facebook, Google, Twitter, etc.)
     """
 
+    permission_classes = allauth_api_settings.DRF_REGISTER_VIEW_PERMISSIONS
     form_class = SignupForm
 
     def get_form_class(self):
@@ -50,6 +53,8 @@ class ProviderListView(APIView):
     """
     List the social account providers available
     """
+
+    permission_classes = allauth_api_settings.DRF_PROVIDERS_VIEW_PERMISSIONS
 
     def get(self, request, format=None):
         p = providers.registry.get_list()

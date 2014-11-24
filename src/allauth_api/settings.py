@@ -22,8 +22,13 @@ from django.utils import importlib, six
 USER_SETTINGS = getattr(settings, 'ALLAUTH_API', None)
 
 DEFAULTS = {
-    'DEFAULT_DRF_LOGIN_TYPE': 'oauth2',
-    'DEFAULT_DRF_LOGIN_CLASSES': {
+    'API_FRAMEWORK': 'rest_framework',
+    'PROVIDER_PARAMETER_NAME': 'provider',
+    'PROVIDER_MODULES': [
+        'allauth_api.socialaccount.providers.facebook'
+    ],
+    'DRF_LOGIN_TYPE': 'oauth2',
+    'DRF_LOGIN_CLASSES': {
         'basic': 'allauth_api.account.rest_framework.authentication.BasicLogin',
         'session': 'allauth_api.account.rest_framework.authentication.BasicLogin',
         'token': 'allauth_api.account.rest_framework.authentication.TokenLogin',
@@ -33,19 +38,26 @@ DEFAULTS = {
         'social_token': 'allauth_api.socialaccount.rest_framework.authentication.TokenLogin',
         'social_oauth2': 'allauth_api.socialaccount.rest_framework.authentication.OAuth2Login',
     },
-    'PROVIDER_PARAMETER_NAME': 'provider',
-    'PROVIDER_MODULES': [
-        'allauth_api.socialaccount.providers.facebook'
-    ],
-    'REGISTER_VIEW_PERMISSIONS': (),
-    'API_FRAMEWORK': 'rest_framework',
+    'DRF_LOGIN_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
+    'DRF_LOGOUT_VIEW_PERMISSIONS': ('rest_framework.permissions.IsAuthenticated',),
+    'DRF_REGISTER_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
+    'DRF_PASSWORD_VIEW_PERMISSIONS': ('rest_framework.permissions.IsAuthenticated',),
+    'DRF_REGISTRATIONS_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
+    'DRF_PROVIDERS_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
+    'DRF_API_VIEW': 'rest_framework.views.APIView'
 }
 
 
 # List of settings that may be in string import notation.
 IMPORT_STRINGS = (
-    'DEFAULT_DRF_AUTHENTICATION_CLASSES',
-    'DEFAULT_DRF_LOGIN_CLASSES'
+    'DRF_LOGIN_CLASSES',
+    'DRF_LOGIN_VIEW_PERMISSIONS',
+    'DRF_LOGOUT_VIEW_PERMISSIONS',
+    'DRF_REGISTER_VIEW_PERMISSIONS',
+    'DRF_PASSWORD_VIEW_PERMISSIONS',
+    'DRF_REGISTRATIONS_VIEW_PERMISSIONS',
+    'DRF_PROVIDERS_VIEW_PERMISSIONS',
+    'DRF_API_VIEW',
 )
 
 
@@ -87,7 +99,7 @@ class AllAuthAPISettings(object):
     For example:
 
         from allauth_api.settings import allauth_api_settings
-        print allauth_api_settings.DEFAULT_DRF_AUTHENTICATION_TYPE
+        print allauth_api_settings.DRF_LOGIN_TYPE
 
     Any setting with string import paths will be automatically resolved
     and return the class, rather than the string literal.

@@ -165,7 +165,7 @@ class RegisterTest(BaseAccountsTest):
     def test_register(self):
         # normal valid registration
         response = self.client.post(self.endpoint, user1)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
         
         # existing user
         expected = {
@@ -193,7 +193,7 @@ class RegisterTest(BaseAccountsTest):
         user3.update({'username': 'jimmydoe'})
         del user3["email"]
         response = self.client.post(self.endpoint, user3)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
         
         #missing email address when required
         expected = {"email": ["This field is required."]}
@@ -354,19 +354,21 @@ class PasswordChangeTest(BaseAccountsTest):
     endpoint="/password/"
     
     def setUp(self):
-        user = User.objects.create(username=user1["username"], email=user1["email"])
-        user.set_password(user1["password1"])
+        user = User.objects.create(username=user1['username'], email=user1['email'])
+        user.set_password(user1['password1'])
         user.save()
         
         self.user = user
         self.data = {
-            "password1": "newpassword",
-            "password2": "newpassword",
-            "oldpassword":user1["password1"]
+            'password1': 'newpassword',
+            'password2': 'newpassword',
+            'oldpassword':user1['password1']
         } 
+        self.client.login(username=user1['username'], password=user1['password1'])
 
     def tearDown(self):
         self.user.delete()
         self.user = None
         self.data = None
+        self.client.logout()
     

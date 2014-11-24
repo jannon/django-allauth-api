@@ -2,7 +2,8 @@ from django.conf import settings
 from allauth.account.app_settings import EmailVerificationMethod
 from allauth.account.utils import send_email_confirmation, get_adapter, messages, signals
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
+from rest_framework.status import (HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED,
+                                   HTTP_204_NO_CONTENT)
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -86,15 +87,13 @@ def perform_login(request, user, email_verification, return_data={}, signal_kwar
     return Response(return_data, HTTP_200_OK)
 
 
-def complete_signup(request, user, email_verification, signal_kwargs={}):
+def complete_signup(request, user, signal_kwargs={}):
     signals.user_signed_up.send(sender=user.__class__,
                                 request=request,
                                 user=user,
                                 **signal_kwargs)
-    return perform_login(request, user,
-                         email_verification=email_verification,
-                         signup=True,
-                         signal_kwargs=signal_kwargs)
+
+    return Response(None, HTTP_204_NO_CONTENT)
 
 
 def serializer_error_string(errors):
