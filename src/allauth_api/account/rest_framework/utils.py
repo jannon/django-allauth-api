@@ -92,7 +92,7 @@ def complete_signup(request, user, signal_kwargs={}):
                                 user=user,
                                 **signal_kwargs)
 
-    return get_adapter().new_user_response(user)
+    return get_adapter().new_user_response(user, request=request)
 
 
 def serializer_error_string(errors):
