@@ -144,7 +144,7 @@ class ChangePasswordView(APIView):
     form_class = ChangePasswordForm
 
     def post(self, request, format=None):
-        form = self.form_class(data=request.DATA)
+        form = self.form_class(data=request.DATA, user=request.user)
         if form.is_valid():
             form.save()
 
