@@ -22,7 +22,7 @@ class AllAuthMixin(object):
         input_data = self.get_input_data(request)
         serializer = self.serializer_class(data=input_data)
         if serializer.is_valid():
-            return (serializer.object['user'], None)
+            return (serializer.validated_data['user'], None)
         else:
             raise AuthenticationFailed(serializer_error_string(serializer.errors))
 
@@ -132,7 +132,7 @@ class OAuth2Login(BaseLogin):
     def login(self, request, *args, **kwargs):
         logger.debug("OAuth2Login")
         view = TokenView.as_view()
-        return view(request, *args, **kwargs)
+        return view(request._request, *args, **kwargs)
 
     def logout(self, request, **kwargs):
         # TODO: uncomment when update django-oauth-toolkit (only repo has revoke token right now)

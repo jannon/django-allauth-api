@@ -3,6 +3,7 @@ import json
 
 from datetime import timedelta
 
+from django import get_version
 from django.utils.timezone import now
 from django.test.utils import override_settings
 from django.test import TestCase
@@ -23,6 +24,7 @@ from allauth.account.adapter import get_adapter as account_adapter
 from allauth.socialaccount.adapter import get_adapter as social_account_adapter
 from allauth.socialaccount import providers
 from unittest.case import skipIf, skip
+from django.conf.global_settings import INSTALLED_APPS
 
 has_oauth2 = False
 has_tokenauth = False
@@ -110,6 +112,8 @@ class BaseAccountsTest(TestCase):
 #         self.assertEqual(response.status_code, 405)
 
 
+NO_PROVIDER_APPS = list(settings.INSTALLED_APPS)
+NO_PROVIDER_APPS.remove('allauth.socialaccount.providers.facebook')
 class ProvidersTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'HEAD', 'GET']
     endpoint = '/social/providers/'
@@ -121,23 +125,25 @@ class ProvidersTest(BaseAccountsTest):
         self.assertEqual(response.status_code, 200, "Non-empty providers list should return 200")
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
     
-    
+    @override_settings(INSTALLED_APPS=NO_PROVIDER_APPS) # until we no lonfer support django < 1.7
     def test_no_providers(self):
         expected = []
-        with self.modify_settings(INSTALLED_APPS={
-            'remove': 'allauth.socialaccount.providers.facebook',
-        }):
-            # hack the provider registry
-            old_registry = providers.registry
-            providers.registry = providers.ProviderRegistry()
-            
-            response = self.client.get(self.endpoint)
-            print(response.content)
-            self.assertEqual(response.status_code, 200, "Empty providers list should return 200")
-            self.assertJSONEqual(response.content.decode(), json.dumps(expected), 
-                             "Empty provider list should contain an empty list representation")
-            
-            providers.registry = old_registry
+
+# only works in 1.7+
+#         with self.modify_settings(INSTALLED_APPS={
+#                 'remove': 'allauth.socialaccount.providers.facebook',
+#         }):
+        # hack the provider registry
+        old_registry = providers.registry
+        providers.registry = providers.ProviderRegistry()
+        
+        response = self.client.get(self.endpoint)
+        print(response.content)
+        self.assertEqual(response.status_code, 200, "Empty providers list should return 200")
+        self.assertJSONEqual(response.content.decode(), json.dumps(expected), 
+                         "Empty provider list should contain an empty list representation")
+        
+        providers.registry = old_registry
 
 
 class RegistrationsTest(BaseAccountsTest):
@@ -367,8 +373,9 @@ class PasswordChangeTest(BaseAccountsTest):
         self.client.login(username=user1['username'], password=user1['password1'])
 
     def tearDown(self):
+        self.client.logout()
         self.user.delete()
         self.user = None
         self.data = None
-        self.client.logout()
+
     

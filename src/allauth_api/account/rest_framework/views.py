@@ -12,10 +12,10 @@ from allauth_api.settings import allauth_api_settings
 from .utils import complete_signup
 from allauth.account.adapter import get_adapter
 
-User = get_user_model()
-
 import logging
 logger = logging.getLogger(__name__)
+
+User = get_user_model()
 
 APIView = allauth_api_settings.DRF_API_VIEW
 
@@ -170,6 +170,11 @@ class RegistrationCheckView(APIView):
             User.objects.get(**lookup_kwargs)
             return Response(None, HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
-            return Response(None, HTTP_404_NOT_FOUND)
+            try:
+                lookup_kwargs = {'email': user_id}
+                User.objects.get(**lookup_kwargs)
+                return Response(None, HTTP_204_NO_CONTENT)
+            except:
+                return Response(None, HTTP_404_NOT_FOUND)
 
 check_registration = RegistrationCheckView.as_view()

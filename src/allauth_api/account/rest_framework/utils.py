@@ -2,7 +2,7 @@ from django.conf import settings
 from allauth.account.app_settings import EmailVerificationMethod
 from allauth.account.utils import send_email_confirmation, get_adapter, messages, signals
 from rest_framework.response import Response
-from rest_framework.status import (HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED, HTTP_201_CREATED)
+from rest_framework.status import (HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED)
 from django.core.exceptions import ImproperlyConfigured
 
 
