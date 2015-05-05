@@ -23,7 +23,11 @@ from allauth_api.settings import allauth_api_settings
 from allauth.account.adapter import get_adapter as account_adapter
 from allauth.socialaccount.adapter import get_adapter as social_account_adapter
 from allauth.socialaccount import providers
-from unittest.case import skipIf, skip
+try:
+    from unittest.case import skipIf, skip
+except ImportError:
+    from unittest2.case import skipIf, skip
+
 from django.conf.global_settings import INSTALLED_APPS
 
 has_oauth2 = False
