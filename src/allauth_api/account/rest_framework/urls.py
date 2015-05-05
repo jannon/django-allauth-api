@@ -5,7 +5,7 @@ from . import views
 urlpatterns = patterns(
     "",
     url(r"^register/$", views.register, name="account_api_register"),
-    url(r"^registrations/(?P<user_id>\w+)/$", views.check_registration,
+    url(r"^registrations/(?P<user_id>[^/]+)/$", views.check_registration,
         name="account_api_check_registration"),
     url(r"^login/$", views.login, name="account_api_login"),
     url(r"^logout/$", views.logout, name="account_api_logout"),
