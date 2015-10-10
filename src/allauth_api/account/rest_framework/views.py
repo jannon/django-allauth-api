@@ -165,16 +165,18 @@ class RegistrationCheckView(APIView):
     permission_classes = allauth_api_settings.DRF_REGISTRATIONS_VIEW_PERMISSIONS
 
     def get(self, request, user_id):
+        field_lookup = User.USERNAME_FIELD
+        if '@' in user_id:
+            field_lookup = 'email'
+
+        if allauth_api_settings.CASE_INSENSITIVE_IDS:
+            field_lookup = "%s__iexact" % field_lookup
+
         try:
-            lookup_kwargs = {User.USERNAME_FIELD: user_id}
+            lookup_kwargs = {field_lookup: user_id}
             User.objects.get(**lookup_kwargs)
             return Response(None, HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
-            try:
-                lookup_kwargs = {'email': user_id}
-                User.objects.get(**lookup_kwargs)
-                return Response(None, HTTP_204_NO_CONTENT)
-            except:
                 return Response(None, HTTP_404_NOT_FOUND)
 
 check_registration = RegistrationCheckView.as_view()

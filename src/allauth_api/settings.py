@@ -27,6 +27,7 @@ DEFAULTS = {
     'PROVIDER_MODULES': [
         'allauth_api.socialaccount.providers.facebook'
     ],
+    'CASE_INSENSITIVE_IDS': False,
     'DRF_LOGIN_TYPE': 'oauth2',
     'DRF_LOGIN_CLASSES': {
         'basic': 'allauth_api.account.rest_framework.authentication.BasicLogin',
@@ -44,7 +45,7 @@ DEFAULTS = {
     'DRF_PASSWORD_VIEW_PERMISSIONS': ('rest_framework.permissions.IsAuthenticated',),
     'DRF_REGISTRATIONS_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
     'DRF_PROVIDERS_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
-    'DRF_API_VIEW': 'rest_framework.views.APIView'
+    'DRF_API_VIEW': 'rest_framework.views.APIView',
 }
 
 
