@@ -118,6 +118,8 @@ class BaseAccountsTest(TestCase):
 
 NO_PROVIDER_APPS = list(settings.INSTALLED_APPS)
 NO_PROVIDER_APPS.remove('allauth.socialaccount.providers.facebook')
+
+
 class ProvidersTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'HEAD', 'GET']
     endpoint = '/social/providers/'
@@ -129,7 +131,7 @@ class ProvidersTest(BaseAccountsTest):
         self.assertEqual(response.status_code, 200, "Non-empty providers list should return 200")
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
     
-    @override_settings(INSTALLED_APPS=NO_PROVIDER_APPS) # until we no lonfer support django < 1.7
+    @override_settings(INSTALLED_APPS=NO_PROVIDER_APPS) # until we no longer support django < 1.7
     def test_no_providers(self):
         expected = []
 
@@ -164,10 +166,22 @@ class RegistrationsTest(BaseAccountsTest):
         response = self.client.get("%s%s/" % (self.endpoint, user.username))
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '', "Response should not contain content")
-        
+
+        response = self.client.get("%s%s/" % (self.endpoint, user.username.upper()))
+        self.assertEqual(response.status_code, 404)
+
         response = self.client.get("%snotauser/" % self.endpoint)
         self.assertEqual(response.status_code, 404)
 
+    @override_settings(CASE_INSENSITIVE_IDS=True)
+    def test_case_insensitive_registrations(self):
+        user = User.objects.create(username='johndoe', email='johndoe@example.com')
+
+        response = self.client.get("%s%s/" % (self.endpoint, user.username.upper()))
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content.decode(), '', "Response should not contain content")
+
+        
 class RegisterTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
     endpoint = '/register/'
@@ -183,6 +197,15 @@ class RegisterTest(BaseAccountsTest):
             "username": ["This username is already taken. Please choose another."]
         }
         response = self.client.post(self.endpoint, user1)
+        self.assertEqual(response.status_code, 400)
+        self.assertJSONEqual(response.content.decode(), json.dumps(expected))
+
+        expected = {
+            "email": ["A user is already registered with this e-mail address."],
+        }
+        data = user1.copy()
+        data['username'] = data['username'].upper()
+        response = self.client.post(self.endpoint, data)
         self.assertEqual(response.status_code, 400)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
@@ -223,6 +246,24 @@ class RegisterTest(BaseAccountsTest):
         response = self.client.post(self.endpoint, user5)
         self.assertEqual(response.status_code, 400)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
+
+    @override_settings(CASE_INSENSITIVE_IDS=True)
+    def test_case_insensitive_register(self):
+        # normal valid registration
+        response = self.client.post(self.endpoint, user1)
+        self.assertEqual(response.status_code, 204)
+        
+        # existing user
+        expected = {
+            "email": ["A user is already registered with this e-mail address."],
+            "username": ["This username is already taken. Please choose another."]
+        }
+        data = user1.copy()
+        data['username'] = data['username'].upper()
+        response = self.client.post(self.endpoint, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertJSONEqual(response.content.decode(), json.dumps(expected))
+
 
 class LoginLogoutTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
