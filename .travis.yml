@@ -5,16 +5,33 @@ env:
     LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
   matrix:
     - TOXENV=check
-    - TOXENV=2.6,coveralls
-    - TOXENV=2.6-nocover
-    - TOXENV=2.7,coveralls
-    - TOXENV=2.7-nocover
-    - TOXENV=3.3,coveralls
-    - TOXENV=3.3-nocover
-    - TOXENV=3.4,coveralls
-    - TOXENV=3.4-nocover
-    - TOXENV=pypy,coveralls
-    - TOXENV=pypy-nocover
+    - TOXENV=py3.4-django1.8,coveralls
+    - TOXENV=py3.4-django1.8-nocover,
+    - TOXENV=py3.3-django1.8,coveralls
+    - TOXENV=py3.3-django1.8-nocover,
+    - TOXENV=py2.7-django1.8,coveralls
+    - TOXENV=py2.7-django1.8-nocover,
+    - TOXENV=py3.4-django1.7,coveralls
+    - TOXENV=py3.4-django1.7-nocover,
+    - TOXENV=py3.3-django1.7,coveralls
+    - TOXENV=py3.3-django1.7-nocover,
+    - TOXENV=py2.7-django1.7,coveralls
+    - TOXENV=py2.7-django1.7-nocover,
+    - TOXENV=py3.4-django1.6,coveralls
+    - TOXENV=py3.4-django1.6-nocover,
+    - TOXENV=py3.3-django1.6,coveralls
+    - TOXENV=py3.3-django1.6-nocover,
+    - TOXENV=py2.7-django1.6,coveralls
+    - TOXENV=py2.7-django1.6-nocover,
+    - TOXENV=py2.6-django1.6,coveralls
+    - TOXENV=py2.6-django1.6-nocover,
+    - TOXENV=py3.4-djangomaster,coveralls
+    - TOXENV=py3.4-djangomaster-nocover,
+    - TOXENV=py3.3-djangomaster,coveralls
+    - TOXENV=py3.3-djangomaster-nocover,
+    - TOXENV=py2.7-djangomaster,coveralls
+    - TOXENV=py2.7-djangomaster-nocover,
+
 before_install:
   - python --version
   - virtualenv --version
