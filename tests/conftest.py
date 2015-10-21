@@ -63,14 +63,6 @@ def pytest_configure():
                     'class': 'logging.StreamHandler',
                     'formatter': 'verbose',
                 },
-                'logfile': {
-                    'level': 'INFO',
-                    'class': 'logging.handlers.RotatingFileHandler',
-                    'filename': '/Users/jannon/projects/django-allauth-api/tests/tests.log',
-                    'maxBytes': 50000,
-                    'backupCount': 1,
-                    'formatter': 'verbose',
-                }
             },
             'formatters': {
                 'verbose': {
