@@ -43,7 +43,7 @@ class PostDataAuthentication(AllAuthMixin, BaseAuthentication):
     serializer_class = UserPassSerializer
 
     def get_input_data(self, request):
-        return request.DATA
+        return request.data
 
 
 class UserPassAuthentication(BaseAuthentication):

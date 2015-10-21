@@ -44,7 +44,7 @@ class LoginHandlerMixin(object):
 
     def post(self, request, *args, **kwargs):
         self.login_handler = None
-        login_type = request.DATA.get('login_type',
+        login_type = request.data.get('login_type',
                                       allauth_api_settings.DRF_LOGIN_TYPE)
         login_class = allauth_api_settings.DRF_LOGIN_CLASSES[login_type]
 
@@ -126,7 +126,7 @@ class RegisterView(CloseableSignupMixin, APIView):
 
     def post(self, request, format=None):
         fc = self.get_form_class()
-        form = fc(data=request.DATA, files=request.FILES)
+        form = fc(data=request.data, files=request.data)
         if form.is_valid():
             user = form.save(request)
             return complete_signup(self.request, user)
@@ -144,7 +144,7 @@ class ChangePasswordView(APIView):
     form_class = ChangePasswordForm
 
     def post(self, request, format=None):
-        form = self.form_class(data=request.DATA, user=request.user)
+        form = self.form_class(data=request.data, user=request.user)
         if form.is_valid():
             form.save()
 
