@@ -1,37 +1,46 @@
 language: python
 python: 3.4
 sudo: false
+
 env:
   global:
     LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
-  matrix:
-    - TOXENV=check
-    - TOXENV=py3.4-django1.8,coveralls
-    - TOXENV=py3.4-django1.8-nocover,
-    - TOXENV=py3.3-django1.8,coveralls
-    - TOXENV=py3.3-django1.8-nocover,
-    - TOXENV=py2.7-django1.8,coveralls
-    - TOXENV=py2.7-django1.8-nocover,
-    - TOXENV=py3.4-django1.7,coveralls
-    - TOXENV=py3.4-django1.7-nocover,
-    - TOXENV=py3.3-django1.7,coveralls
-    - TOXENV=py3.3-django1.7-nocover,
-    - TOXENV=py2.7-django1.7,coveralls
-    - TOXENV=py2.7-django1.7-nocover,
-    - TOXENV=py3.4-django1.6,coveralls
-    - TOXENV=py3.4-django1.6-nocover,
-    - TOXENV=py3.3-django1.6,coveralls
-    - TOXENV=py3.3-django1.6-nocover,
-    - TOXENV=py2.7-django1.6,coveralls
-    - TOXENV=py2.7-django1.6-nocover,
-    - TOXENV=py2.6-django1.6,coveralls
-    - TOXENV=py2.6-django1.6-nocover,
-    - TOXENV=py3.4-djangomaster,coveralls
-    - TOXENV=py3.4-djangomaster-nocover,
-    - TOXENV=py3.3-djangomaster,coveralls
-    - TOXENV=py3.3-djangomaster-nocover,
-    - TOXENV=py2.7-djangomaster,coveralls
-    - TOXENV=py2.7-djangomaster-nocover,
+  - TOXENV=check
+  - TOXENV=py3.4-django1.9,coveralls
+# - TOXENV=py3.4-django1.9-nocover
+  - TOXENV=py3.4-django1.8,coveralls
+# - TOXENV=py3.4-django1.8-nocover,
+  - TOXENV=py3.3-django1.8,coveralls
+# - TOXENV=py3.3-django1.8-nocover,
+  - TOXENV=py2.7-django1.8,coveralls
+# - TOXENV=py2.7-django1.8-nocover,
+  - TOXENV=py3.4-django1.7,coveralls
+# - TOXENV=py3.4-django1.7-nocover,
+  - TOXENV=py3.3-django1.7,coveralls
+# - TOXENV=py3.3-django1.7-nocover,
+  - TOXENV=py2.7-django1.7,coveralls
+# - TOXENV=py2.7-django1.7-nocover,
+  - TOXENV=py3.4-django1.6,coveralls
+# - TOXENV=py3.4-django1.6-nocover,
+  - TOXENV=py3.3-django1.6,coveralls
+# - TOXENV=py3.3-django1.6-nocover,
+  - TOXENV=py2.7-django1.6,coveralls
+# - TOXENV=py2.7-django1.6-nocover,
+  - TOXENV=py2.6-django1.6,coveralls
+# - TOXENV=py2.6-django1.6-nocover,
+  - TOXENV=py3.4-djangomaster,coveralls
+# - TOXENV=py3.4-djangomaster-nocover,
+  - TOXENV=py3.3-djangomaster,coveralls
+# - TOXENV=py3.3-djangomaster-nocover,
+  - TOXENV=py2.7-djangomaster,coveralls
+# - TOXENV=py2.7-djangomaster-nocover
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: TOXENV=py3.4-djangomaster,coveralls
+    - env: TOXENV=py3.3-djangomaster,coveralls
+    - env: TOXENV=py2.7-djangomaster,coveralls
 
 before_install:
   - python --version
@@ -39,11 +48,9 @@ before_install:
   - pip --version
   - uname -a
   - lsb_release -a
+
 install:
   - pip install tox
+
 script:
   - tox -v
-#notifications:
-#  email:
-#    on_success: never
-#    on_failure: always
