@@ -3,8 +3,6 @@ python: 3.4
 sudo: false
 
 env:
-  global:
-    LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
   - TOXENV=check
   - TOXENV=py3.4-django1.9,coveralls
 # - TOXENV=py3.4-django1.9-nocover
