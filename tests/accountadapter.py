@@ -2,8 +2,10 @@ from allauth.account.adapter import DefaultAccountAdapter
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
 
+from allauth_api.account.rest_framework.adapter import AccountAdapterMixin
 
-class TestAccountAdapter(DefaultAccountAdapter):
+
+class TestAccountAdapter(AccountAdapterMixin, DefaultAccountAdapter):
 
     def add_message(self, request, level, message_template, message_context={}, extra_tags=''):
         """

@@ -136,4 +136,10 @@ class AllAuthAPISettings(object):
             # Make sure we can initialize the class
             val()
 
+    def refresh(self, user_settings=None):
+        self.user_settings = user_settings or {}
+        for k in list(user_settings):
+            if hasattr(self, k):
+                delattr(self, k)
+
 allauth_api_settings = AllAuthAPISettings(USER_SETTINGS, DEFAULTS, IMPORT_STRINGS)
