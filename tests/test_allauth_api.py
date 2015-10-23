@@ -68,14 +68,29 @@ TODO: tests for authorized api access?
 - oauth2 logout
 - invalid developer
 
-/password/
-
+/confirm-email/
+/password/reset/confirm/
 """
 
 def set_case_insensitive(case_insensitive):
     temp_settings = getattr(settings, 'ALLAUTH_API', {}).copy()
     temp_settings['CASE_INSENSITIVE_IDS'] = case_insensitive
     allauth_api_settings.refresh(temp_settings)
+
+def debug_print_mail(msg):
+    attrs = {
+        "SUBJECT": "subject",
+        "BODY": "body",
+        "FROM": "from_email",
+        "TO": "to",
+        "CC": "cc",
+        "BCC": "bcc",
+        "HEADERS": "extraa_headers",
+        "ATTACHMENTS": "attachments",
+        "SUBTYPE": "content_subtype",
+    }
+    for label in attrs:
+        print(label, ": ", getattr(msg, attrs[label], None))
 
 
 class BaseAccountsTest(TestCase):
@@ -201,7 +216,8 @@ class RegisterTest(BaseAccountsTest):
 
         # normal valid registration
         response = self.client.post(self.endpoint, user1)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(mail.outbox), 1)
 
         # existing user
         expected = {
@@ -238,7 +254,7 @@ class RegisterTest(BaseAccountsTest):
         user3.update({'username': 'jimmydoe'})
         del user3["email"]
         response = self.client.post(self.endpoint, user3)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 201)
 
         #missing email address when required
         expected = {"email": ["This field is required."]}
@@ -264,7 +280,7 @@ class RegisterTest(BaseAccountsTest):
 
         # normal valid registration
         response = self.client.post(self.endpoint, user1)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 201)
 
         # existing user
         expected = {
@@ -431,9 +447,48 @@ class PasswordChangeTest(BaseAccountsTest):
         }
         self.client.login(username=user1['username'], password=user1['password1'])
 
+    def test_password_change(self):
+        response = self.client.post(self.endpoint, self.data)
+        self.assertEqual(response.status_code, 204)
+        self.client.logout()
+        self.assertTrue(self.client.login(username=user1['username'], password='newpassword'))
+
     def tearDown(self):
         self.client.logout()
         self.user.delete()
         self.user = None
         self.data = None
 
+class PasswordResetTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint="/password/reset/"
+
+    def setUp(self):
+        user = User.objects.create(username=user1['username'], email=user1['email'])
+        user.set_password(user1['password1'])
+        user.save()
+
+        self.user = user
+        self.data = {
+            'email': user1['email']
+        }
+        self.client.login(username=user1['username'], password=user1['password1'])
+
+    def test_valid_reset_request(self):
+        response = self.client.post(self.endpoint, self.data)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_non_existent_email(self):
+        data = {
+            'email': 'notauser@example.com'
+        }
+        response = self.client.post(self.endpoint, data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def tearDown(self):
+        self.client.logout()
+        self.user.delete()
+        self.user = None
+        self.data = None

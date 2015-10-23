@@ -4,7 +4,7 @@ from rest_framework.status import HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, H
     HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from rest_framework.response import Response
 
-from allauth.account.forms import SignupForm, ChangePasswordForm
+from allauth.account.forms import SignupForm, ChangePasswordForm, ResetPasswordForm
 from allauth.account import app_settings, signals
 from allauth.utils import get_user_model, get_form_class
 
@@ -129,7 +129,7 @@ class RegisterView(CloseableSignupMixin, APIView):
         form = fc(data=request.data, files=request.data)
         if form.is_valid():
             user = form.save(request)
-            return complete_signup(self.request, user)
+            return complete_signup(self.request, user, app_settings.EMAIL_VERIFICATION)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
 
 register = RegisterView.as_view()
@@ -155,6 +155,24 @@ class ChangePasswordView(APIView):
         return Response(form.errors, HTTP_400_BAD_REQUEST)
 
 change_password = ChangePasswordView.as_view()
+
+
+class ResetPasswordView(APIView):
+    """
+    Initiates password reset
+    """
+
+    permission_classes = allauth_api_settings.DRF_PASSWORD_VIEW_PERMISSIONS
+    form_class = ResetPasswordForm
+
+    def post(self, request, format=None):
+        form = self.form_class(data=request.data)
+        if form.is_valid():
+            form.save(request)
+            return Response(None, HTTP_204_NO_CONTENT)
+        return Response(form.errors, HTTP_400_BAD_REQUEST)
+
+reset_password = ResetPasswordView.as_view()
 
 
 class RegistrationCheckView(APIView):

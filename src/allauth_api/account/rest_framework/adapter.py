@@ -10,12 +10,12 @@ from allauth_api.settings import allauth_api_settings
 
 
 class AccountAdapterMixin(object):
-    def new_user_response(self, user, request=None):
-        serializer_class = self.new_user_serializer()
+    def new_user_response_data(self, user, request=None):
+        serializer_class = self.new_user_serializer(user)
         return_data = None
         if serializer_class:
             return_data = serializer_class(instance=user, context={'request': request}).data
-        return Response(return_data, HTTP_201_CREATED)
+        return return_data
 
     def new_user_serializer(self, user):
         return None
@@ -49,3 +49,7 @@ class AccountAdapterMixin(object):
             return username
         raise forms.ValidationError(_("This username is already taken. Please "
                                       "choose another."))
+
+    def login(self, request, user):
+        super(AccountAdapterMixin, self).login(request, user)
+        return {'message': 'User logged in.'}

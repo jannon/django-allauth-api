@@ -2,7 +2,7 @@ from django.conf import settings
 from allauth.account.app_settings import EmailVerificationMethod
 from allauth.account.utils import send_email_confirmation, get_adapter, messages, signals
 from rest_framework.response import Response
-from rest_framework.status import (HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED)
+from rest_framework.status import (HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED)
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -43,7 +43,7 @@ class RestFrameworkTokenGenerator(BaseTokenGenerator):
             token.delete()
 
 
-def perform_login(request, user, email_verification, return_data={}, signal_kwargs={},
+def perform_login(request, user, email_verification, return_data=None, signal_kwargs={},
                   signup=False):
     """
     Keyword arguments:
@@ -72,7 +72,9 @@ def perform_login(request, user, email_verification, return_data={}, signal_kwar
     if not user.is_active:
         return Response({'message': 'User account is inactive'}, HTTP_403_FORBIDDEN)
 
-    get_adapter().login(request, user)
+    if return_data is None:
+        return_data = {}
+    login_data = get_adapter().login(request, user)
     signals.user_logged_in.send(sender=user.__class__,
                                 request=request,
                                 user=user,
@@ -82,17 +84,27 @@ def perform_login(request, user, email_verification, return_data={}, signal_kwar
                               'account/messages/logged_in.txt',
                               {'user': user})
 
-    return_data.update({'message': 'User logged in.'})
-    return Response(return_data, HTTP_200_OK)
+    return_data.update(login_data or {})
+    status_code = HTTP_200_OK
+    if signup:
+        status_code = HTTP_201_CREATED
+    return Response(return_data, status_code)
 
 
-def complete_signup(request, user, signal_kwargs={}):
+def complete_signup(request, user, email_verification, signal_kwargs=None):
+    if signal_kwargs is None:
+        signal_kwargs = {}
     signals.user_signed_up.send(sender=user.__class__,
                                 request=request,
                                 user=user,
                                 **signal_kwargs)
 
-    return get_adapter().new_user_response(user, request=request)
+    return_data = get_adapter().new_user_response_data(user, request=request)
+    return perform_login(request, user,
+                         email_verification=email_verification,
+                         return_data=return_data,
+                         signal_kwargs=signal_kwargs,
+                         signup=True)
 
 
 def serializer_error_string(errors):
