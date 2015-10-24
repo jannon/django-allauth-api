@@ -28,6 +28,7 @@ DEFAULTS = {
         'allauth_api.socialaccount.providers.facebook'
     ],
     'CASE_INSENSITIVE_IDS': False,
+    'USE_DJANGO_MESSAGES': False,
     'DRF_LOGIN_TYPE': 'oauth2',
     'DRF_LOGIN_CLASSES': {
         'basic': 'allauth_api.account.rest_framework.authentication.BasicLogin',

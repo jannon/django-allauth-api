@@ -51,3 +51,7 @@ class AccountAdapterMixin(object):
     def login(self, request, user):
         super(AccountAdapterMixin, self).login(request, user)
         return {'message': 'User logged in.'}
+
+    def add_message(self, request, level, message_template, message_context=None, extra_tags=''):
+        if allauth_api_settings.USE_DJANGO_MESSAGES:
+            super(AccountAdapterMixin, self).add_message(request, level, message_template, message_context, extra_tags)
