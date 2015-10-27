@@ -76,13 +76,13 @@ class BaseLogin(object):
         try:
             user, _ = self.authenticate(request)
         except AuthenticationFailed as err:
-            return Response({'message': err.detail}, err.status_code)
+            return Response({'detail': err.detail}, err.status_code)
 
         if user is not None:
             return perform_login(request, user, email_verification=app_settings.EMAIL_VERIFICATION,
                                  return_data=self.get_return_data(request, user),
                                  signal_kwargs=self.get_signal_kwargs(request, user))
-        return Response({'message': 'User authentication failed'}, HTTP_401_UNAUTHORIZED)
+        return Response({'detail': 'User authentication failed'}, HTTP_401_UNAUTHORIZED)
 
     def logout(self, request, **kwargs):
         auth_logout(request)

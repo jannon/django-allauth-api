@@ -50,8 +50,28 @@ class AccountAdapterMixin(object):
 
     def login(self, request, user):
         super(AccountAdapterMixin, self).login(request, user)
-        return {'message': 'User logged in.'}
+        return {'detail': 'User logged in.'}
 
     def add_message(self, request, level, message_template, message_context=None, extra_tags=''):
         if allauth_api_settings.USE_DJANGO_MESSAGES:
             super(AccountAdapterMixin, self).add_message(request, level, message_template, message_context, extra_tags)
+
+    def email_confirmation_key(self, request):
+        return request.data.get("key", None)
+
+    def email_confirmation_response_data(self, confirmation):
+        return {'detail': '%s %s' % (confirmation.email_address.email, _("confirmed"))}
+
+    def reset_password_confirmation_data(self, request):
+        return {
+            'uidb36': request.data.get('uidb36', None),
+            'key': request.data.get('key', None),
+            'password1': request.data.get('password1', None),
+            'password2': request.data.get('password2', None),
+        }
+
+    def reset_password_confirmation_form_kwargs(self, request):
+        return {}
+
+    def reset_password_confirmation_response_data(self, user):
+        return {'detail': _("User password changed")}

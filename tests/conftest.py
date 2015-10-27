@@ -26,7 +26,7 @@ def pytest_configure():
             'django.contrib.auth.context_processors.auth',
             # Required by allauth template tags
             'django.core.context_processors.request',
-        
+
             # allauth specific context processors
             'allauth.account.context_processors.account',
             'allauth.socialaccount.context_processors.socialaccount',
@@ -39,11 +39,12 @@ def pytest_configure():
             'django.contrib.messages',
             'django.contrib.staticfiles',
 
+            'tests',
             'allauth',
             'allauth.account',
             'allauth.socialaccount',
             'allauth.socialaccount.providers.facebook',
-    
+
         ),
         PASSWORD_HASHERS=(
             'django.contrib.auth.hashers.SHA1PasswordHasher',
@@ -79,7 +80,7 @@ def pytest_configure():
             'loggers': {
                 '': {
                      # mainly for debugging tests since with tox all output doesn't always show up
-                     # 'handlers': ['console', 'logfile'], 
+                     # 'handlers': ['console', 'logfile'],
                     'handlers': ['console', ],
                 }
             }
@@ -133,11 +134,10 @@ def pytest_configure():
         settings.INSTALLED_APPS += (
             'oauth2_provider',
         )
-    
+
 
     try:
         import django
         django.setup()
     except AttributeError:
         pass
-    

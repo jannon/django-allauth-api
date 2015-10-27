@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import json
+import re
 
 from datetime import timedelta
 
@@ -294,6 +295,26 @@ class RegisterTest(BaseAccountsTest):
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
 
+class EmailConfirmationTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint="/confirm-email/"
+
+    def test_email_confirmation(self):
+        # register a user first
+        response = self.client.post("/register/", user1)
+        self.assertEqual(response.status_code, 201)
+
+        # then get the email confirmation key
+        email_text = mail.outbox[0].body
+        key = email_text.split('/')[-2]
+
+        # now make the request
+        expected = {"detail":"johndoe@example.com confirmed"}
+        response = self.client.post(self.endpoint, {"key": key})
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content.decode(), json.dumps(expected))
+
+
 class LoginLogoutTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
     endpoint="/login/"
@@ -321,7 +342,7 @@ class LoginLogoutTest(BaseAccountsTest):
         user = User.objects.get(username=user1["username"])
 
         # normal valid login
-        expected={"message": "User logged in."}
+        expected={"detail": "User logged in."}
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
@@ -338,14 +359,14 @@ class LoginLogoutTest(BaseAccountsTest):
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
         # invalid credentials login
-        expected = {'message': 'Unable to login with provided credentials.'}
+        expected = {'detail': 'Unable to login with provided credentials.'}
         self.data["password"] = "invalidpassword"
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 401)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
         # missing credentials login
-        expected = {'message': 'Must include "username" or "email", and "password".'}
+        expected = {'detail': 'Must include "username" or "email", and "password".'}
         del self.data["username"]
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 401)
@@ -357,7 +378,7 @@ class LoginLogoutTest(BaseAccountsTest):
         # --------------------------
 
         #disabled user account login
-        expected = {'message': 'User account is disabled.'}
+        expected = {'detail': 'User account is disabled.'}
         self.data.update({"password": user1["password1"], "username": user1["username"]})
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 401)
@@ -376,8 +397,8 @@ class LoginLogoutTest(BaseAccountsTest):
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 200)
         obj = json.loads(response.content.decode())
-        self.assertIn('message', obj.keys())
-        self.assertEqual(obj['message'], 'User logged in.')
+        self.assertIn('detail', obj.keys())
+        self.assertEqual(obj['detail'], 'User logged in.')
         self.assertIn('token', obj.keys())
 
         # token logout
@@ -492,3 +513,45 @@ class PasswordResetTest(BaseAccountsTest):
         self.user.delete()
         self.user = None
         self.data = None
+
+
+class PasswordResetConfirmationTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint="/password/reset/confirm/"
+
+    def setUp(self):
+        user = User.objects.create(username=user1['username'], email=user1['email'])
+        user.set_password(user1['password1'])
+        user.save()
+
+        self.user = user
+        self.data = {
+            'email': user1['email']
+        }
+        self.client.login(username=user1['username'], password=user1['password1'])
+
+    def test_password_reset_confirmation(self):
+        # first request a reset
+        response = self.client.post("/password/reset/", self.data)
+        self.assertEqual(response.status_code, 204)
+
+        # then get the code
+        email_text = mail.outbox[0].body
+        creds = email_text.split('/')[-2]
+        p = re.compile(r'(?P<uidb36>[0-9A-Za-z]+)-(?P<key>.+)')
+        m = p.match(creds)
+        uidb36 = m.group('uidb36')
+        key = m.group('key')
+
+        # now make the request
+        data = {
+            'uidb36': uidb36,
+            'key': key,
+            'password1': 'newpassword',
+            'password2': 'newpassword'
+        }
+        response = self.client.post(self.endpoint, data)
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.assertTrue(self.client.login(username=user1['username'], password='newpassword'))

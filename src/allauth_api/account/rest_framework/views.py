@@ -1,17 +1,20 @@
 from django.utils.translation import ugettext as _
+from django.contrib import messages
 
-from rest_framework.status import HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT,\
-    HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from rest_framework.response import Response
-
-from allauth.account.forms import SignupForm, ChangePasswordForm, ResetPasswordForm
-from allauth.account import app_settings, signals
+from rest_framework.status import (HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT,
+                                   HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_200_OK)
 from allauth.utils import get_user_model, get_form_class
+from allauth.account import app_settings, signals
+from allauth.account.models import EmailConfirmation
+from allauth.account.forms import (SignupForm, ChangePasswordForm, ResetPasswordForm, ResetPasswordKeyForm,
+                                   UserTokenForm)
+from allauth.account.adapter import get_adapter
 
 from allauth_api.settings import allauth_api_settings
 from .utils import complete_signup
-from allauth.account.adapter import get_adapter
 
+from pprint import pprint
 import logging
 logger = logging.getLogger(__name__)
 
@@ -71,7 +74,7 @@ class CloseableSignupMixin(object):
         return get_adapter().is_open_for_signup(self.request)
 
     def closed(self):
-        return Response({"message": _("Registration is closed")}, HTTP_403_FORBIDDEN)
+        return Response({"detail": _("Registration is closed")}, HTTP_403_FORBIDDEN)
 
 
 class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
@@ -92,7 +95,7 @@ class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
 
     def handle_login_logout(self, request, *args, **kwargs):
         if self.login_handler is None:
-            return Response({"message": _("No login handler found")}, HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.login(request, *args, **kwargs)
 
 login = LoginView.as_view()
@@ -107,7 +110,7 @@ class LogoutView(LoginHandlerMixin, APIView):
 
     def handle_login_logout(self, request, *args, **kwargs):
         if self.login_handler is None:
-            return Response({"message": _("No login handler found")}, HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.logout(request, *args, **kwargs)
 
 logout = LogoutView.as_view()
@@ -135,6 +138,42 @@ class RegisterView(CloseableSignupMixin, APIView):
 register = RegisterView.as_view()
 
 
+class ConfirmEmailView(APIView):
+    """
+    Confirms an email address
+    """
+    permission_classes = allauth_api_settings.DRF_REGISTER_VIEW_PERMISSIONS
+
+    def post(self, *args, **kwargs):
+        confirmation = self.get_object()
+        if not confirmation:
+            return Response({"detail": _("Email confirmation key could not be found")}, HTTP_400_BAD_REQUEST)
+
+        confirmation.confirm(self.request)
+        get_adapter().add_message(self.request,
+                                  messages.SUCCESS,
+                                  'account/messages/email_confirmed.txt',
+                                  {'email': confirmation.email_address.email})
+        return_data = get_adapter().email_confirmation_response_data(confirmation)
+        return Response(return_data, HTTP_200_OK)
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        key = get_adapter().email_confirmation_key(self.request)
+        try:
+            return queryset.get(key=key)
+        except EmailConfirmation.DoesNotExist:
+            return None
+
+    def get_queryset(self):
+        qs = EmailConfirmation.objects.all_valid()
+        qs = qs.select_related("email_address__user")
+        return qs
+
+confirm_email = ConfirmEmailView.as_view()
+
+
 class ChangePasswordView(APIView):
     """
     Sets a user's password
@@ -143,11 +182,17 @@ class ChangePasswordView(APIView):
     permission_classes = allauth_api_settings.DRF_PASSWORD_VIEW_PERMISSIONS
     form_class = ChangePasswordForm
 
+    def get_form_class(self):
+        return get_form_class(app_settings.FORMS, 'change_password', self.form_class)
+
     def post(self, request, format=None):
-        form = self.form_class(data=request.data, user=request.user)
+        fc = self.get_form_class()
+        form = fc(data=request.data, user=request.user)
         if form.is_valid():
             form.save()
-
+            get_adapter().add_message(self.request,
+                                      messages.SUCCESS,
+                                      'account/messages/password_changed.txt')
             signals.password_changed.send(sender=request.user.__class__,
                                           request=request,
                                           user=request.user)
@@ -165,14 +210,61 @@ class ResetPasswordView(APIView):
     permission_classes = allauth_api_settings.DRF_PASSWORD_VIEW_PERMISSIONS
     form_class = ResetPasswordForm
 
+    def get_form_class(self):
+        return get_form_class(app_settings.FORMS, 'reset_password', self.form_class)
+
     def post(self, request, format=None):
-        form = self.form_class(data=request.data)
+        fc = self.get_form_class()
+        form = fc(data=request.data)
         if form.is_valid():
             form.save(request)
             return Response(None, HTTP_204_NO_CONTENT)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
 
 reset_password = ResetPasswordView.as_view()
+
+
+class ConfirmResetPasswordView(APIView):
+    """
+    Confirms a password reset request
+    """
+
+    form_class = ResetPasswordKeyForm
+
+    def get_form_class(self):
+        return get_form_class(app_settings.FORMS, 'reset_password_from_key', self.form_class)
+
+    def post(self, request, *args, **kwargs):
+        data = get_adapter().reset_password_confirmation_data(request)
+        self.key = data.get('key', None)
+        token_form = UserTokenForm(data=data)
+
+        if not token_form.is_valid():
+            return Response(token_form.errors, HTTP_400_BAD_REQUEST)
+
+        self.reset_user = token_form.reset_user
+        form_kwargs = self.get_form_kwargs()
+        fc = self.get_form_class()
+        password_form = fc(data=data, **form_kwargs)
+        if password_form.is_valid():
+            password_form.save()
+            get_adapter().add_message(self.request,
+                                      messages.SUCCESS,
+                                      'account/messages/password_changed.txt')
+            signals.password_reset.send(sender=self.reset_user.__class__,
+                                        request=self.request,
+                                        user=self.reset_user)
+            return_data = get_adapter().reset_password_confirmation_response_data(token_form.reset_user)
+            return Response(return_data, HTTP_200_OK)
+        return Response(password_form.errors, HTTP_400_BAD_REQUEST)
+
+    def get_form_kwargs(self):
+        kwargs = get_adapter().reset_password_confirmation_form_kwargs(self.request)
+        kwargs["user"] = self.reset_user
+        kwargs["temp_key"] = self.key
+        return kwargs
+
+confirm_reset_password = ConfirmResetPasswordView.as_view()
 
 
 class RegistrationCheckView(APIView):
