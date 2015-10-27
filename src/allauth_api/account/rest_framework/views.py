@@ -148,6 +148,9 @@ class ConfirmEmailView(APIView):
         if not confirmation:
             return Response({"detail": _("Email confirmation key could not be found")}, HTTP_400_BAD_REQUEST)
 
+        if confirmation.email_address.verified:
+            return Response(None, HTTP_304_NOT_MODIFIED)
+
         confirmation.confirm(self.request)
         get_adapter().add_message(self.request,
                                   messages.SUCCESS,

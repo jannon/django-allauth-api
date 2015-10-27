@@ -314,6 +314,9 @@ class EmailConfirmationTest(BaseAccountsTest):
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
+        response = self.client.post(self.endpoint, {"key": key})
+        self.assertEqual(response.status_code, 304)
+
 
 class LoginLogoutTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
