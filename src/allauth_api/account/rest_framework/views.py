@@ -14,7 +14,6 @@ from allauth.account.adapter import get_adapter
 from allauth_api.settings import allauth_api_settings
 from .utils import complete_signup
 
-from pprint import pprint
 import logging
 logger = logging.getLogger(__name__)
 
