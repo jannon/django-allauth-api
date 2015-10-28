@@ -9,13 +9,13 @@ from allauth_api.settings import allauth_api_settings
 
 class AccountAdapterMixin(object):
     def new_user_response_data(self, user, request=None):
-        serializer_class = self.new_user_serializer(user)
+        serializer_class = self.new_user_serializer_class(user)
         return_data = None
         if serializer_class:
             return_data = serializer_class(instance=user, context={'request': request}).data
         return return_data
 
-    def new_user_serializer(self, user):
+    def new_user_serializer_class(self, user):
         return None
 
     def clean_username(self, username):
