@@ -1,8 +1,10 @@
 from django.conf.urls import patterns, url, include
+from views import EmailRequiredView
 
 urlpatterns = patterns("",
-    url(r"^", include('allauth_api.urls')),
-    url(r"^test", include('allauth.urls')),
+    url(r'^', include('allauth_api.urls')),
+    url(r'^test', include('allauth.urls')),
+    url(r'^email_required/$', EmailRequiredView.as_view(), name='account_api_email_required')
 )
 
 try:

@@ -28,6 +28,7 @@ DEFAULTS = {
         'allauth_api.socialaccount.providers.facebook'
     ],
     'CASE_INSENSITIVE_IDS': False,
+    'AUTO_SEND_EMAIL_CONFIRMATION': True,
     'USE_DJANGO_MESSAGES': False,
     'DRF_LOGIN_TYPE': 'oauth2',
     'DRF_LOGIN_CLASSES': {
