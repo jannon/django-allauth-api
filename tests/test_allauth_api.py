@@ -1,8 +1,10 @@
 from __future__ import absolute_import
 import json
 import re
-
+import io
+import base64
 from datetime import timedelta
+from email.mime.image import MIMEImage
 
 from django import get_version
 from django.utils.timezone import now
@@ -35,6 +37,7 @@ from django.conf.global_settings import INSTALLED_APPS
 
 has_oauth2 = False
 has_tokenauth = False
+has_pil = False
 
 try:
     from oauth2_provider.models import get_application_model
@@ -46,6 +49,12 @@ except ImportError:
 try:
     import rest_framework
     has_tokenauth = True
+except ImportError:
+    pass
+
+try:
+    from PIL import Image
+    has_pil = True
 except ImportError:
     pass
 
@@ -299,6 +308,30 @@ class RegisterTest(BaseAccountsTest):
         response = self.client.post(self.endpoint, data)
         self.assertEqual(response.status_code, 400)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
+
+
+@override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
+class ImageKeyRegisterTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint = '/register/'
+
+    @skipIf(not has_pil, "PIL is not installed")
+    def test_register(self):
+        # normal valid registration
+        response = self.client.post(self.endpoint, user1)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(len(msg.attachments), 1)
+        self.assertTrue(isinstance(msg.attachments[0], MIMEImage))
+        att = msg.attachments[0]
+        self.assertEqual(att['Content-Disposition'], 'inline')
+        self.assertTrue('Content-ID' in att.keys())
+        image = Image.open(io.BytesIO(base64.b64decode(att.get_payload())))
+        self.assertEqual(image.size, (240, 173))
+        key = msg.body.split('/')[-2]
+        self.assertEqual(key, image.text['key'])
+        # debug_print_mail(mail.outbox[0], self)
 
 
 class EmailConfirmationTest(BaseAccountsTest):
