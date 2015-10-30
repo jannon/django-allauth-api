@@ -1,5 +1,14 @@
+from email.mime.image import MIMEImage
+from email.utils import make_msgid
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
+from django.template.loader import render_to_string
+from django.template import TemplateDoesNotExist
+from django.core.exceptions import ImproperlyConfigured
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
+
 from allauth.account import app_settings
 from allauth.account.adapter import USERNAME_REGEX
 from allauth.utils import get_user_model
@@ -75,3 +84,60 @@ class AccountAdapterMixin(object):
 
     def reset_password_confirmation_response_data(self, user):
         return {'detail': _("User password changed")}
+
+
+class ImageKeyMixin(object):
+    """
+    A mixin class for an account adapter that enables sending and receiving images for email validation
+    and password reset keys.
+    """
+
+    def render_mail(self, template_prefix, email, context):
+        """
+        Overrides to catch the prefixes for email confirmation and password reset and render html
+        emails with image-based keys
+        """
+        if not template_prefix in allauth_api_settings.IMAGE_KEY_PREFIXES:
+            return super(ImageKeyMixin, self).render_mail(template_prefix, email, context)
+
+        # Create an image key
+        gc = allauth_api_settings.IMAGE_KEY_GENERATOR_CLASS
+        generator = gc()
+        key = self.get_key_from_context(template_prefix, context)
+        image = generator.create_image_key(key)
+        key_cid = make_msgid()
+        context['key_cid'] = key_cid[1:-1]  # trim angle brackets
+        print("Context: ", context)
+
+        subject = render_to_string('{0}_subject.txt'.format(template_prefix),
+                                   context)
+        # remove superfluous line breaks
+        subject = " ".join(subject.splitlines()).strip()
+        subject = self.format_email_subject(subject)
+
+        bodies = {}
+        for ext in ['html', 'txt']:
+            try:
+                template_name = '{0}_message.{1}'.format(template_prefix, ext)
+                bodies[ext] = render_to_string(template_name,
+                                               context).strip()
+            except TemplateDoesNotExist:
+                # We require both html and text templates
+                raise ImproperlyConfigured('Both text and html templates must exist to use ImageKeyMixin')
+        msg = EmailMultiAlternatives(subject, bodies['txt'], settings.DEFAULT_FROM_EMAIL, [email])
+        msg.attach_alternative(bodies['html'], 'text/html')
+        img = MIMEImage(image.read())
+        img.add_header('Content-ID', key_cid)
+        img.add_header('Content-Disposition', 'inline')
+        # msg.attach('key.png', image.read(), 'image/png')
+        msg.attach(img)
+        image.close()
+        return msg
+
+    def get_key_from_context(self, template_prefix, context):
+        result = ""
+        if 'email_confirmation' in template_prefix:
+            result = context['key']
+        elif 'password_reset'in template_prefix:
+            result = context['password_reset_url'].split('/')[-2]
+        return result

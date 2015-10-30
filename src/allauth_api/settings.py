@@ -48,6 +48,12 @@ DEFAULTS = {
     'DRF_REGISTRATIONS_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
     'DRF_PROVIDERS_VIEW_PERMISSIONS': ('rest_framework.permissions.AllowAny',),
     'DRF_API_VIEW': 'rest_framework.views.APIView',
+    'IMAGE_KEY_PREFIXES': [
+        'account/email/email_confirmation_signup',
+        'account/email/email_confirmation',
+        'account/email/password_reset_key',
+    ],
+    'IMAGE_KEY_GENERATOR_CLASS': 'allauth_api.account.utils.PNGImageKeyGenerator',
 }
 
 
@@ -61,6 +67,7 @@ IMPORT_STRINGS = (
     'DRF_REGISTRATIONS_VIEW_PERMISSIONS',
     'DRF_PROVIDERS_VIEW_PERMISSIONS',
     'DRF_API_VIEW',
+    'IMAGE_KEY_GENERATOR_CLASS'
 )
 
 

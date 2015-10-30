@@ -78,21 +78,26 @@ def set_case_insensitive(case_insensitive):
     temp_settings['CASE_INSENSITIVE_IDS'] = case_insensitive
     allauth_api_settings.refresh(temp_settings)
 
-def debug_print_mail(msg):
+def debug_print_mail(msg, test):
     attrs = {
         "SUBJECT": "subject",
         "BODY": "body",
         "FROM": "from_email",
+        "REPLY TO": "reply_to",
         "TO": "to",
         "CC": "cc",
         "BCC": "bcc",
-        "HEADERS": "extraa_headers",
+        "HEADERS": "extra_headers",
         "ATTACHMENTS": "attachments",
         "SUBTYPE": "content_subtype",
+        "ALTERATIVES": "alternatives",
+        "ALT_SUBTYPE": "alternative_subtype"
     }
     for label in attrs:
         print(label, ": ", getattr(msg, attrs[label], None))
 
+    if test:
+        test.assertTrue(False)
 
 class BaseAccountsTest(TestCase):
     allowed_methods = ALL_METHODS
@@ -219,6 +224,7 @@ class RegisterTest(BaseAccountsTest):
         response = self.client.post(self.endpoint, user1)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(len(mail.outbox), 1)
+        # debug_print_mail(mail.outbox[0], self)
 
         # existing user
         expected = {

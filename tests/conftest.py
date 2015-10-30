@@ -1,5 +1,6 @@
 def pytest_configure():
     from django.conf import settings
+    import os
 
     settings.configure(
         DEBUG_PROPAGATE_EXCEPTIONS=True,
@@ -10,6 +11,7 @@ def pytest_configure():
         USE_I18N=True,
         USE_L10N=True,
         STATIC_URL='/static/',
+        STATIC_ROOT='src/allauth_api/static',
         ROOT_URLCONF='tests.urls',
         TEMPLATE_LOADERS=(
             'django.template.loaders.filesystem.Loader',
@@ -40,6 +42,7 @@ def pytest_configure():
             'django.contrib.staticfiles',
 
             'tests',
+            'allauth_api',
             'allauth',
             'allauth.account',
             'allauth.socialaccount',
