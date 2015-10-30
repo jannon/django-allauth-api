@@ -107,7 +107,6 @@ class ImageKeyMixin(object):
         image = generator.create_image_key(key)
         key_cid = make_msgid()
         context['key_cid'] = key_cid[1:-1]  # trim angle brackets
-        print("Context: ", context)
 
         subject = render_to_string('{0}_subject.txt'.format(template_prefix),
                                    context)
