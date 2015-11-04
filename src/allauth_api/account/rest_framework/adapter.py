@@ -9,6 +9,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 
+from PIL import Image
+
 from allauth.account import app_settings
 from allauth.account.adapter import USERNAME_REGEX
 from allauth.utils import get_user_model
@@ -66,7 +68,7 @@ class AccountAdapterMixin(object):
             super(AccountAdapterMixin, self).add_message(request, level, message_template, message_context, extra_tags)
 
     def email_confirmation_key(self, request):
-        return request.data.get("key", None)
+        return request.data.get('key', None)
 
     def email_confirmation_response_data(self, confirmation):
         return {'detail': '%s %s' % (confirmation.email_address.email, _("confirmed"))}
@@ -140,3 +142,34 @@ class ImageKeyMixin(object):
         elif 'password_reset'in template_prefix:
             result = context['password_reset_url'].split('/')[-2]
         return result
+
+    def reset_password_confirmation_data(self, request):
+        data = {
+            'password1': request.data.get('password1', None),
+            'password2': request.data.get('password2', None),
+        }
+        key_image = request.data.get('key', None)
+        if key_image:
+            try:
+                image = Image.open(key_image)
+                key_text = image.text.get('key', None)
+                image.close()
+            except:
+                key_text = key_image  # Fall back on single text key
+            if key_text:
+                i = key_text.index('-')
+                data['uidb36'] = key_text[0:i]
+                data['key'] = key_text[i+1:]
+
+        return data
+
+    def email_confirmation_key(self, request):
+        key = None
+        key_image = request.data.get('key', None)
+        if key_image:
+            try:
+                key = Image.open(key_image).text.get('key', None)
+                key_image.close()
+            except:
+                key = key_image  # Fall back on text key
+        return key

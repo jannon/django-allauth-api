@@ -357,6 +357,27 @@ class EmailConfirmationTest(BaseAccountsTest):
         self.assertEqual(response.status_code, 304)
 
 
+@override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
+class ImageKeyEmailConfirmationTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint="/confirm-email/"
+
+    def test_email_confirmation(self):
+        # register a user first
+        response = self.client.post("/register/", user1)
+        self.assertEqual(response.status_code, 201)
+
+        # then get the key and post it to the confirmation url
+        image = io.BytesIO(base64.b64decode(mail.outbox[0].attachments[0].get_payload()))
+        expected = {"detail":"johndoe@example.com confirmed"}
+        response = self.client.post(self.endpoint, {"key": image})
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content.decode(), json.dumps(expected))
+        image.seek(0)
+        response = self.client.post(self.endpoint, {"key": image})
+        self.assertEqual(response.status_code, 304)
+
+
 class LoginLogoutTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
     endpoint="/login/"
@@ -430,7 +451,6 @@ class LoginLogoutTest(BaseAccountsTest):
         self.user.is_active = True
         self.user.save()
         # --------------------------
-
 
     @skipIf(not has_tokenauth, "rest_framework is not installed")
     def test_token_login_logout(self):
@@ -522,6 +542,7 @@ class PasswordChangeTest(BaseAccountsTest):
         self.user = None
         self.data = None
 
+
 class PasswordResetTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
     endpoint="/password/reset/"
@@ -549,6 +570,46 @@ class PasswordResetTest(BaseAccountsTest):
         response = self.client.post(self.endpoint, data)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(len(mail.outbox), 0)
+
+    def tearDown(self):
+        self.client.logout()
+        self.user.delete()
+        self.user = None
+        self.data = None
+
+
+@override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
+class ImageKeyPasswordResetTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint="/password/reset/"
+
+    def setUp(self):
+        user = User.objects.create(username=user1['username'], email=user1['email'])
+        user.set_password(user1['password1'])
+        user.save()
+
+        self.user = user
+        self.data = {
+            'email': user1['email']
+        }
+        self.client.login(username=user1['username'], password=user1['password1'])
+
+    @skipIf(not has_pil, "PIL is not installed")
+    def test_valid_reset_request(self):
+        response = self.client.post(self.endpoint, self.data)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(len(msg.attachments), 1)
+        self.assertTrue(isinstance(msg.attachments[0], MIMEImage))
+        att = msg.attachments[0]
+        self.assertEqual(att['Content-Disposition'], 'inline')
+        self.assertTrue('Content-ID' in att.keys())
+        image = Image.open(io.BytesIO(base64.b64decode(att.get_payload())))
+        self.assertEqual(image.size, (240, 173))
+        key = msg.body.split('/')[-2]
+        self.assertEqual(key, image.text['key'])
+        # debug_print_mail(mail.outbox[0], self)
 
     def tearDown(self):
         self.client.logout()
@@ -597,3 +658,52 @@ class PasswordResetConfirmationTest(BaseAccountsTest):
 
         self.client.logout()
         self.assertTrue(self.client.login(username=user1['username'], password='newpassword'))
+
+    def tearDown(self):
+        self.client.logout()
+        self.user.delete()
+        self.user = None
+        self.data = None
+
+
+@override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
+class ImageKeyPasswordResetConfirmationTest(BaseAccountsTest):
+    allowed_methods = ['OPTIONS', 'POST']
+    endpoint="/password/reset/confirm/"
+
+    def setUp(self):
+        user = User.objects.create(username=user1['username'], email=user1['email'])
+        user.set_password(user1['password1'])
+        user.save()
+
+        self.user = user
+        self.data = {
+            'email': user1['email']
+        }
+        self.client.login(username=user1['username'], password=user1['password1'])
+
+    def test_password_reset_confirmation(self):
+        # first request a reset
+        response = self.client.post("/password/reset/", self.data)
+        self.assertEqual(response.status_code, 204)
+
+        # then get the image
+        image = io.BytesIO(base64.b64decode(mail.outbox[0].attachments[0].get_payload()))
+
+        # now make the request
+        data = {
+            'key': image,
+            'password1': 'newpassword',
+            'password2': 'newpassword'
+        }
+        response = self.client.post(self.endpoint, data)
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+        self.assertTrue(self.client.login(username=user1['username'], password='newpassword'))
+
+    def tearDown(self):
+        self.client.logout()
+        self.user.delete()
+        self.user = None
+        self.data = None
