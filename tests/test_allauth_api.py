@@ -78,8 +78,6 @@ TODO: tests for authorized api access?
 - oauth2 logout
 - invalid developer
 
-/confirm-email/
-/password/reset/confirm/
 """
 
 def set_case_insensitive(case_insensitive):
@@ -556,7 +554,6 @@ class PasswordResetTest(BaseAccountsTest):
         self.data = {
             'email': user1['email']
         }
-        self.client.login(username=user1['username'], password=user1['password1'])
 
     def test_valid_reset_request(self):
         response = self.client.post(self.endpoint, self.data)
@@ -592,7 +589,6 @@ class ImageKeyPasswordResetTest(BaseAccountsTest):
         self.data = {
             'email': user1['email']
         }
-        self.client.login(username=user1['username'], password=user1['password1'])
 
     @skipIf(not has_pil, "PIL is not installed")
     def test_valid_reset_request(self):
@@ -631,7 +627,6 @@ class PasswordResetConfirmationTest(BaseAccountsTest):
         self.data = {
             'email': user1['email']
         }
-        self.client.login(username=user1['username'], password=user1['password1'])
 
     def test_password_reset_confirmation(self):
         # first request a reset
@@ -680,7 +675,6 @@ class ImageKeyPasswordResetConfirmationTest(BaseAccountsTest):
         self.data = {
             'email': user1['email']
         }
-        self.client.login(username=user1['username'], password=user1['password1'])
 
     def test_password_reset_confirmation(self):
         # first request a reset

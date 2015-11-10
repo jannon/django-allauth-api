@@ -209,7 +209,7 @@ class ResetPasswordView(APIView):
     Initiates password reset
     """
 
-    permission_classes = allauth_api_settings.DRF_PASSWORD_VIEW_PERMISSIONS
+    permission_classes = allauth_api_settings.DRF_PASSWORD_RESET_PERMISSIONS
     form_class = ResetPasswordForm
 
     def get_form_class(self):
@@ -231,6 +231,7 @@ class ConfirmResetPasswordView(APIView):
     Confirms a password reset request
     """
 
+    permission_classes = allauth_api_settings.DRF_PASSWORD_RESET_PERMISSIONS
     form_class = ResetPasswordKeyForm
 
     def get_form_class(self):
