@@ -14,7 +14,8 @@ class EmailVerified(BasePermission):
             return False
         return True
 
+
 class EmailVerifiedOrReadOnly(EmailVerified):
     def has_permission(self, request, view):
         return (request.method in SAFE_METHODS or
-            super(EmailVerifiedOrReadOnly, self).has_permission(request, view))
+                super(EmailVerifiedOrReadOnly, self).has_permission(request, view))

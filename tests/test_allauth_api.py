@@ -26,6 +26,7 @@ from allauth import app_settings
 from allauth_api.settings import allauth_api_settings
 
 from allauth.account.adapter import get_adapter as account_adapter
+from allauth.account.models import EmailAddress, EmailConfirmation
 from allauth.socialaccount.adapter import get_adapter as social_account_adapter
 from allauth.socialaccount import providers
 try:
@@ -332,6 +333,30 @@ class ImageKeyRegisterTest(BaseAccountsTest):
         # debug_print_mail(mail.outbox[0], self)
 
 
+class SendEmailConfirmationTest(BaseAccountsTest):
+    allowed_meyhods = ['OPTIONS', 'POST']
+    endpoint = "/send-email-confirmation/"
+
+    def test_send_email_confirmation(self): 
+        response = self.client.post("/register/", user1)
+        self.assertEqual(response.status_code, 201)
+        
+        user = User.objects.get(username=user1['username'])
+        
+        # Get around the email cooldown period
+        email_address = EmailAddress.objects.get_for_user(user, user1['email'])
+        email_confirmation = EmailConfirmation.objects.get(email_address=email_address)
+        email_confirmation.sent = now() - timedelta(days=1)
+        email_confirmation.save()
+        
+        self.client.login(username=user1['username'], password=user1['password1'])
+        response = self.client.post("/send-email-confirmation/")
+        self.assertEqual(response.status_code, 200)
+        
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertTrue(mail.outbox[1].body.startswith("Hello from example.com!\n\nYou're receiving this e-mail because user johndoe at example.com has given yours as an e-mail address to connect their account.\n\nTo confirm this is correct, go to http://testserver/testconfirm-email/"))
+
+    
 class EmailConfirmationTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
     endpoint="/confirm-email/"

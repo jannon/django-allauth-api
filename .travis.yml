@@ -4,25 +4,25 @@ sudo: false
 
 env:
   - TOXENV=check
+  - TOXENV=py3.5-django1.10
+  - TOXENV=py3.4-django1.10
+  - TOXENV=py2.7-django1.10
+  - TOXENV=py3.5-django1.9
+  - TOXENV=py3.4-django1.9
+  - TOXENV=py2.7-django1.9
+  - TOXENV=py3.5-django1.8
   - TOXENV=py3.4-django1.8
   - TOXENV=py3.3-django1.8
   - TOXENV=py2.7-django1.8
-  - TOXENV=py3.4-django1.7
-  - TOXENV=py3.3-django1.7
-  - TOXENV=py2.7-django1.7
-  - TOXENV=py3.4-django1.6
-  - TOXENV=py3.3-django1.6
-  - TOXENV=py2.7-django1.6
-  - TOXENV=py2.6-django1.6
+  - TOXENV=py3.5-djangomaster
   - TOXENV=py3.4-djangomaster
-  - TOXENV=py3.3-djangomaster
   - TOXENV=py2.7-djangomaster
 
 matrix:
   fast_finish: true
   allow_failures:
+    - env: TOXENV=py3.5-djangomaster
     - env: TOXENV=py3.4-djangomaster
-    - env: TOXENV=py3.3-djangomaster
     - env: TOXENV=py2.7-djangomaster
 
 before_install:

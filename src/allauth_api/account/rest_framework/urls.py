@@ -6,6 +6,7 @@ urlpatterns = patterns(
     "",
     url(r"^register/$", views.register, name="account_api_register"),
     url(r"^registrations/(?P<user_id>[^/]+)/$", views.check_registration, name="account_api_check_registration"),
+    url(r"^send-email-confirmation/$", views.send_email_confirmation, name="account_api_send_email_confirmation"),
     url(r"^confirm-email/$", views.confirm_email, name="account_api_confirm_email"),
     url(r"^login/$", views.login, name="account_api_login"),
     url(r"^logout/$", views.logout, name="account_api_logout"),

@@ -6,13 +6,14 @@ from rest_framework.status import (HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, 
                                    HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_200_OK)
 from allauth.utils import get_user_model, get_form_class
 from allauth.account import app_settings, signals
-from allauth.account.models import EmailConfirmation
+import allauth.account.utils as allauth_utils
+from allauth.account.models import EmailConfirmation, EmailAddress
 from allauth.account.forms import (SignupForm, ChangePasswordForm, ResetPasswordForm, ResetPasswordKeyForm,
                                    UserTokenForm)
 from allauth.account.adapter import get_adapter
 
 from allauth_api.settings import allauth_api_settings
-from .utils import complete_signup
+from allauth_api.account.rest_framework import utils
 
 import logging
 logger = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ class RegisterView(CloseableSignupMixin, APIView):
         form = fc(data=request.data, files=request.data)
         if form.is_valid():
             user = form.save(request)
-            return complete_signup(self.request, user, app_settings.EMAIL_VERIFICATION)
+            return utils.complete_signup(self.request, user, app_settings.EMAIL_VERIFICATION)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
 
 register = RegisterView.as_view()
@@ -174,6 +175,27 @@ class ConfirmEmailView(APIView):
         return qs
 
 confirm_email = ConfirmEmailView.as_view()
+
+
+class SendEmailConfirmationView(APIView):
+    """
+    Resends the email confirmation message to a user
+    """
+    permission_classes = allauth_api_settings.DRF_SEND_EMAIL_CONFIRMATION_PERMISSIONS
+
+    def post(self, *args, **kwargs):
+        # if the email address is already verified, do nothing
+        user = self.request.user
+        has_verified_email = EmailAddress.objects.filter(user=user, verified=True).exists()
+        if has_verified_email:
+            return Response(None, HTTP_204_NO_CONTENT)
+
+        # otherwise, send the confirmation email
+        print("sending email confirmation...")
+        allauth_utils.send_email_confirmation(self.request, user)
+        return Response({'message': 'Account email verification sent'}, HTTP_200_OK)
+
+send_email_confirmation = SendEmailConfirmationView.as_view()
 
 
 class ChangePasswordView(APIView):
