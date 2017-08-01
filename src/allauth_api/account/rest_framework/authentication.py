@@ -29,7 +29,7 @@ class AllAuthMixin(object):
 
 class HeaderDataAuthentication(AllAuthMixin, BaseAuthentication):
     """
-    An authentication method that recieves credentials in http headers
+    An authentication method that receives credentials in HTTP headers
     """
 
     def get_input_data(self, request):
