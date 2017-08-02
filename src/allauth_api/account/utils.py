@@ -1,7 +1,6 @@
 import os
 import tempfile
 
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 
 from allauth_api.settings import allauth_api_settings
@@ -57,7 +56,6 @@ if HAS_PIL:
             outfile.seek(0)
             return outfile
 
-
     class TemplateImageMixin(object):
         image_template = os.path.join(settings.STATIC_ROOT, 'allauth_api', 'key.png')
 
@@ -76,9 +74,8 @@ if HAS_PIL:
         """
         Creates an image using the key
         """
-         # TODO
+        # TODO
         pass
-
 
     class MetadataInscriptionMixin(object):
         """
@@ -97,17 +94,14 @@ if HAS_PIL:
 
             return options
 
-
     class SuperimposeInscriptionMixin(object):
         """
         Superimposes the key onto the image
         """
         # TODO
 
-
     class Base64ExporterMixin(object):
         pass
-
 
     class PNGImageKeyGenerator(TemplateImageMixin, MetadataInscriptionMixin, BaseImageKeyGenerator):
         pass

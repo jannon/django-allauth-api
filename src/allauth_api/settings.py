@@ -157,4 +157,5 @@ class AllAuthAPISettings(object):
             if hasattr(self, k):
                 delattr(self, k)
 
+
 allauth_api_settings = AllAuthAPISettings(USER_SETTINGS, DEFAULTS, IMPORT_STRINGS)

@@ -46,6 +46,7 @@ class RegisterView(CloseableSignupMixin, APIView):
         return get_adapter().is_open_for_signup(self.request,
                                                 self.sociallogin)
 
+
 register = RegisterView.as_view()
 
 
@@ -60,5 +61,6 @@ class ProviderListView(APIView):
         p = providers.registry.get_list()
         serializer = ProviderSerializer(p, many=True)
         return Response(serializer.data)
+
 
 list_providers = ProviderListView.as_view()

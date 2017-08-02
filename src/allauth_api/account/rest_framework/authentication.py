@@ -7,10 +7,9 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from allauth.account import app_settings
 
-from .utils import perform_login, RestFrameworkTokenGenerator, serializer_error_string, clone_request
+from .utils import perform_login, RestFrameworkTokenGenerator, serializer_error_string
 from .serializers import UserPassSerializer
 
-from oauth2_provider.views.base import TokenView  # , RevokeTokenView
 
 import logging
 logger = logging.getLogger(__name__)

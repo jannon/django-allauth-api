@@ -97,6 +97,7 @@ class LoginView(AlreadyLoggedInMixin, LoginHandlerMixin, APIView):
             return Response({"detail": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.login(request, *args, **kwargs)
 
+
 login = LoginView.as_view()
 
 
@@ -111,6 +112,7 @@ class LogoutView(LoginHandlerMixin, APIView):
         if self.login_handler is None:
             return Response({"detail": _("No login handler found")}, HTTP_400_BAD_REQUEST)
         return self.login_handler.logout(request, *args, **kwargs)
+
 
 logout = LogoutView.as_view()
 
@@ -134,6 +136,7 @@ class RegisterView(CloseableSignupMixin, APIView):
             user = form.save(request)
             return utils.complete_signup(self.request, user, app_settings.EMAIL_VERIFICATION)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
+
 
 register = RegisterView.as_view()
 
@@ -177,6 +180,7 @@ class ConfirmEmailView(APIView):
         qs = qs.select_related("email_address__user")
         return qs
 
+
 confirm_email = ConfirmEmailView.as_view()
 
 
@@ -197,6 +201,7 @@ class SendEmailConfirmationView(APIView):
         print("sending email confirmation...")
         allauth_utils.send_email_confirmation(self.request, user)
         return Response({'message': 'Account email verification sent'}, HTTP_200_OK)
+
 
 send_email_confirmation = SendEmailConfirmationView.as_view()
 
@@ -226,6 +231,7 @@ class ChangePasswordView(APIView):
             return Response(None, HTTP_204_NO_CONTENT)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
 
+
 change_password = ChangePasswordView.as_view()
 
 
@@ -247,6 +253,7 @@ class ResetPasswordView(APIView):
             form.save(request)
             return Response(None, HTTP_204_NO_CONTENT)
         return Response(form.errors, HTTP_400_BAD_REQUEST)
+
 
 reset_password = ResetPasswordView.as_view()
 
@@ -292,6 +299,7 @@ class ConfirmResetPasswordView(APIView):
         kwargs["temp_key"] = self.key
         return kwargs
 
+
 confirm_reset_password = ConfirmResetPasswordView.as_view()
 
 
@@ -316,5 +324,6 @@ class RegistrationCheckView(APIView):
             return Response(None, HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
                 return Response(None, HTTP_404_NOT_FOUND)
+
 
 check_registration = RegistrationCheckView.as_view()
