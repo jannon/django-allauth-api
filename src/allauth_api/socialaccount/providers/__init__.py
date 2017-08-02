@@ -1,5 +1,5 @@
 from allauth_api.settings import allauth_api_settings
-from django.utils import importlib
+from importlib import import_module
 
 
 class ProviderRegistry(object):
@@ -28,7 +28,7 @@ class ProviderRegistry(object):
             for app in allauth_api_settings.PROVIDER_MODULES:
                 provider_module = app + '.provider'
                 try:
-                    importlib.import_module(provider_module)
+                    import_module(provider_module)
                 except ImportError:
                     pass
             self.loaded = True

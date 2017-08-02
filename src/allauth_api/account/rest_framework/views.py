@@ -7,9 +7,8 @@ from rest_framework.status import (HTTP_304_NOT_MODIFIED, HTTP_400_BAD_REQUEST, 
 from allauth.utils import get_user_model, get_form_class
 from allauth.account import app_settings, signals
 import allauth.account.utils as allauth_utils
-from allauth.account.models import EmailConfirmation, EmailAddress
-from allauth.account.forms import (SignupForm, ChangePasswordForm, ResetPasswordForm, ResetPasswordKeyForm,
-                                   UserTokenForm)
+from allauth.account.models import EmailConfirmation, EmailAddress, EmailConfirmationHMAC
+from allauth.account.forms import (SignupForm, ChangePasswordForm, ResetPasswordForm, ResetPasswordKeyForm, UserTokenForm)
 from allauth.account.adapter import get_adapter
 
 from allauth_api.settings import allauth_api_settings
@@ -129,7 +128,8 @@ class RegisterView(CloseableSignupMixin, APIView):
 
     def post(self, request, format=None):
         fc = self.get_form_class()
-        form = fc(data=request.data, files=request.data)
+        data = request.data
+        form = fc(data=data, files=data)
         if form.is_valid():
             user = form.save(request)
             return utils.complete_signup(self.request, user, app_settings.EMAIL_VERIFICATION)
@@ -161,13 +161,16 @@ class ConfirmEmailView(APIView):
         return Response(return_data, HTTP_200_OK)
 
     def get_object(self, queryset=None):
-        if queryset is None:
-            queryset = self.get_queryset()
         key = get_adapter().email_confirmation_key(self.request)
-        try:
-            return queryset.get(key=key)
-        except EmailConfirmation.DoesNotExist:
-            return None
+        emailconfirmation = EmailConfirmationHMAC.from_key(key)
+        if not emailconfirmation:
+            if queryset is None:
+                queryset = self.get_queryset()
+            try:
+                emailconfirmation = queryset.get(key=key.lower())
+            except EmailConfirmation.DoesNotExist:
+                pass
+        return emailconfirmation
 
     def get_queryset(self):
         qs = EmailConfirmation.objects.all_valid()

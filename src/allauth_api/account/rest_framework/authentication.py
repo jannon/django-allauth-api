@@ -7,7 +7,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from allauth.account import app_settings
 
-from .utils import perform_login, RestFrameworkTokenGenerator, serializer_error_string
+from .utils import perform_login, RestFrameworkTokenGenerator, serializer_error_string, clone_request
 from .serializers import UserPassSerializer
 
 from oauth2_provider.views.base import TokenView  # , RevokeTokenView
@@ -122,19 +122,20 @@ class TokenLogin(BasicLogin):
         return Response(None, HTTP_204_NO_CONTENT)
 
 
-class OAuth2Login(BaseLogin):
-    """
-    A login class that accepts oauth2 authentication requests and returns the appropriate
-    access tokens.  This login method, in its default configuration is only available if
-    oauth2_provider is in installed_apps
-    """
-
-    def login(self, request, *args, **kwargs):
-        logger.debug("OAuth2Login")
-        view = TokenView.as_view()
-        return view(request._request, *args, **kwargs)
-
-    def logout(self, request, **kwargs):
-        # TODO: uncomment when update django-oauth-toolkit (only repo has revoke token right now)
-        # return RevokeTokenView(request, *args, **kwargs)
-        super(self, TokenLogin).logout(request, **kwargs)
+# class OAuth2Login(BaseLogin):
+#     """
+#     A login class that accepts oauth2 authentication requests and returns the appropriate
+#     access tokens.  This login method, in its default configuration is only available if
+#     oauth2_provider is in installed_apps
+#     """
+#
+#     def login(self, request, *args, **kwargs):
+#         logger.debug("OAuth2Login")
+#         view = TokenView.as_view()
+#         return view(request._request, *args, **kwargs)
+# #         return view(clone_request(request._request, request.data), *args, **kwargs)
+#
+#     def logout(self, request, **kwargs):
+#         # TODO: uncomment when update django-oauth-toolkit (only repo has revoke token right now)
+#         # return RevokeTokenView(request, *args, **kwargs)
+#         super(self, TokenLogin).logout(request, **kwargs)

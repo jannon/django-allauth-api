@@ -47,11 +47,11 @@ class TokenLogin(account_auth.TokenLogin):
     auth_class = SocialAuthentication
 
 
-class OAuth2Login(account_auth.OAuth2Login):
-    """
-    A login class that accepts oauth2 authentication requests and returns the appropriate
-    access tokens.  This login method, in its default configuration is only available if
-    oauth2_provider is in installed_apps
-    """
-
-    auth_class = SocialAuthentication
+# class OAuth2Login(account_auth.OAuth2Login):
+#     """
+#     A login class that accepts oauth2 authentication requests and returns the appropriate
+#     access tokens.  This login method, in its default configuration is only available if
+#     oauth2_provider is in installed_apps
+#     """
+#
+#     auth_class = SocialAuthentication

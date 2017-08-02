@@ -12,7 +12,6 @@ from django.conf import settings
 from PIL import Image
 
 from allauth.account import app_settings
-from allauth.account.adapter import USERNAME_REGEX
 from allauth.utils import get_user_model
 
 from allauth_api.settings import allauth_api_settings
@@ -29,35 +28,35 @@ class AccountAdapterMixin(object):
     def new_user_serializer_class(self, user):
         return None
 
-    def clean_username(self, username):
+    def clean_username(self, username, shallow=False):
         """
         Validates the username. You can hook into this if you want to
         (dynamically) restrict what usernames can be chosen. This copies most of the code from the django-allauth
-        DefaultAccountAdapter, but adds support for the CASE_INSENTIVE_IDS setting
+        DefaultAccountAdapter, but adds support for the CASE_INSENTIVE_IDS setting because the PRESERVE_USERNAME_CASING
+        setting in allauth, does not allow you to preserve the username case but check against it in a case-insensitive way
         """
-        if not USERNAME_REGEX.match(username):
-            raise forms.ValidationError(_("Usernames can only contain "
-                                          "letters, digits and @/./+/-/_."))
+        for validator in app_settings.USERNAME_VALIDATORS:
+            validator(username)
 
         # TODO: Add regexp support to USERNAME_BLACKLIST
         username_blacklist_lower = [ub.lower()
                                     for ub in app_settings.USERNAME_BLACKLIST]
         if username.lower() in username_blacklist_lower:
-            raise forms.ValidationError(_("Username can not be used. "
-                                          "Please use other username."))
-        username_field = app_settings.USER_MODEL_USERNAME_FIELD
-        assert username_field
-        user_model = get_user_model()
-        lookup = ''
-        if allauth_api_settings.CASE_INSENSITIVE_IDS:
-            lookup = '__iexact'
-        try:
-            query = {username_field + lookup: username}
-            user_model.objects.get(**query)
-        except user_model.DoesNotExist:
-            return username
-        raise forms.ValidationError(_("This username is already taken. Please "
-                                      "choose another."))
+            raise forms.ValidationError(
+                self.error_messages['username_blacklisted'])
+        # Skipping database lookups when shallow is True, needed for unique
+        # username generation.
+        if not shallow:
+            from .utils import filter_users_by_username
+            if filter_users_by_username(username).exists():
+                user_model = get_user_model()
+                username_field = app_settings.USER_MODEL_USERNAME_FIELD
+                error_message = user_model._meta.get_field(
+                    username_field).error_messages.get('unique')
+                if not error_message:
+                    error_message = self.error_messages['username_taken']
+                raise forms.ValidationError(error_message)
+        return username
 
     def login(self, request, user):
         super(AccountAdapterMixin, self).login(request, user)
@@ -99,7 +98,7 @@ class ImageKeyMixin(object):
         Overrides to catch the prefixes for email confirmation and password reset and render html
         emails with image-based keys
         """
-        if not template_prefix in allauth_api_settings.IMAGE_KEY_PREFIXES:
+        if template_prefix not in allauth_api_settings.IMAGE_KEY_PREFIXES:
             return super(ImageKeyMixin, self).render_mail(template_prefix, email, context)
 
         # Create an image key
@@ -159,7 +158,7 @@ class ImageKeyMixin(object):
             if key_text:
                 i = key_text.index('-')
                 data['uidb36'] = key_text[0:i]
-                data['key'] = key_text[i+1:]
+                data['key'] = key_text[i + 1:]
 
         return data
 

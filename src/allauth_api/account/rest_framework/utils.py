@@ -1,9 +1,14 @@
+from io import BytesIO
+from django.core.handlers.wsgi import WSGIRequest
 from django.conf import settings
-from allauth.account.app_settings import EmailVerificationMethod
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
+from allauth.account import app_settings
 from allauth.account.utils import send_email_confirmation, get_adapter, messages, signals
 from rest_framework.response import Response
 from rest_framework.status import (HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED)
-from django.core.exceptions import ImproperlyConfigured
+from allauth_api.settings import allauth_api_settings
 
 
 class BaseTokenGenerator(object):
@@ -55,13 +60,13 @@ def perform_login(request, user, email_verification, return_data=None, signal_kw
     from allauth.account.models import EmailAddress
     has_verified_email = EmailAddress.objects.filter(user=user,
                                                      verified=True).exists()
-    if email_verification == EmailVerificationMethod.NONE:
+    if email_verification == app_settings.EmailVerificationMethod.NONE:
         pass
-    elif email_verification == EmailVerificationMethod.OPTIONAL:
+    elif email_verification == app_settings.EmailVerificationMethod.OPTIONAL:
         # In case of OPTIONAL verification: send on signup.
         if not has_verified_email and signup:
             send_email_confirmation(request, user, signup=signup)
-    elif email_verification == EmailVerificationMethod.MANDATORY:
+    elif email_verification == app_settings.EmailVerificationMethod.MANDATORY:
         if not has_verified_email:
             send_email_confirmation(request, user, signup=signup)
             return Response({'message': 'Account email verification sent'}, HTTP_401_UNAUTHORIZED)
@@ -118,3 +123,29 @@ def serializer_error_string(errors):
             for v in errors[k]:
                 errlist.append("%s - %s" % (k, v))
     return "\n".join(errlist)
+
+
+def filter_users_by_username(*username):
+    lookup = ''
+    if allauth_api_settings.CASE_INSENSITIVE_IDS:
+        lookup = '__iexact'
+
+    qlist = [Q(**{app_settings.USER_MODEL_USERNAME_FIELD + lookup: u}) for u in username]
+    q = qlist[0]
+    for q2 in qlist[1:]:
+        q = q | q2
+    ret = get_user_model().objects.filter(q)
+    return ret
+
+
+def clone_request(request, data):
+    environ_clone = request.environ.copy()
+    environ_clone['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
+    data_str = "&".join(["{0}={1}".format(k, v) for k, v in data.items()])
+    print("Forwarded data: ", data_str, "length: ", len(data_str))
+    environ_clone['CONTENT_LENGTH'] = len(data_str)
+    wsgi_data = BytesIO()
+    wsgi_data.write(bytes(data_str, encoding='utf-8'))
+    environ_clone['wsgi.input'] = wsgi_data
+    new_request = WSGIRequest(environ_clone)
+    return new_request

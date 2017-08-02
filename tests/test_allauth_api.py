@@ -226,10 +226,14 @@ class RegisterTest(BaseAccountsTest):
     endpoint = '/register/'
 
     def test_register(self):
+        """
+        Test normal case-sensitive registration
+        """
         set_case_insensitive(False)
 
         # normal valid registration
         response = self.client.post(self.endpoint, user1)
+        print(response.content.decode())
         self.assertEqual(response.status_code, 201)
         self.assertEqual(len(mail.outbox), 1)
         # debug_print_mail(mail.outbox[0], self)
@@ -237,7 +241,7 @@ class RegisterTest(BaseAccountsTest):
         # existing user
         expected = {
             "email": ["A user is already registered with this e-mail address."],
-            "username": ["This username is already taken. Please choose another."]
+            "username": ["A user with that username already exists."]
         }
         response = self.client.post(self.endpoint, user1)
         self.assertEqual(response.status_code, 400)
@@ -253,7 +257,7 @@ class RegisterTest(BaseAccountsTest):
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
         # invalid password confirm
-        expected = {"__all__": ["You must type the same password each time."]}
+        expected = {"password2": ["You must type the same password each time."]}
         user2 = user1.copy()
         user2.update({
             'username': 'janedoe',
@@ -300,7 +304,7 @@ class RegisterTest(BaseAccountsTest):
         # existing user
         expected = {
             "email": ["A user is already registered with this e-mail address."],
-            "username": ["This username is already taken. Please choose another."]
+            "username": ["A user with that username already exists."]
         }
         data = user1.copy()
         data['username'] = data['username'].upper()
@@ -337,29 +341,23 @@ class SendEmailConfirmationTest(BaseAccountsTest):
     allowed_meyhods = ['OPTIONS', 'POST']
     endpoint = "/send-email-confirmation/"
 
-    def test_send_email_confirmation(self): 
+    def test_send_email_confirmation(self):
         response = self.client.post("/register/", user1)
         self.assertEqual(response.status_code, 201)
-        
+
         user = User.objects.get(username=user1['username'])
-        
-        # Get around the email cooldown period
-        email_address = EmailAddress.objects.get_for_user(user, user1['email'])
-        email_confirmation = EmailConfirmation.objects.get(email_address=email_address)
-        email_confirmation.sent = now() - timedelta(days=1)
-        email_confirmation.save()
-        
+
         self.client.login(username=user1['username'], password=user1['password1'])
         response = self.client.post("/send-email-confirmation/")
         self.assertEqual(response.status_code, 200)
-        
-        self.assertEqual(len(mail.outbox), 2)
-        self.assertTrue(mail.outbox[1].body.startswith("Hello from example.com!\n\nYou're receiving this e-mail because user johndoe at example.com has given yours as an e-mail address to connect their account.\n\nTo confirm this is correct, go to http://testserver/testconfirm-email/"))
 
-    
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertTrue(mail.outbox[1].body.startswith("Hello from example.com!\n\nYou're receiving this e-mail because user johndoe has given yours as an e-mail address to connect their account.\n\nTo confirm this is correct, go to http://testserver/testconfirm-email/"))
+
+
 class EmailConfirmationTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/confirm-email/"
+    endpoint = "/confirm-email/"
 
     def test_email_confirmation(self):
         # register a user first
@@ -370,9 +368,11 @@ class EmailConfirmationTest(BaseAccountsTest):
         email_text = mail.outbox[0].body
         key = email_text.split('/')[-2]
 
+        print("Key: ", key)
         # now make the request
         expected = {"detail":"johndoe@example.com confirmed"}
         response = self.client.post(self.endpoint, {"key": key})
+        print("RESPONSE: ", response.content.decode())
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
 
@@ -383,7 +383,7 @@ class EmailConfirmationTest(BaseAccountsTest):
 @override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
 class ImageKeyEmailConfirmationTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/confirm-email/"
+    endpoint = "/confirm-email/"
 
     def test_email_confirmation(self):
         # register a user first
@@ -403,7 +403,8 @@ class ImageKeyEmailConfirmationTest(BaseAccountsTest):
 
 class LoginLogoutTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/login/"
+    endpoint = "/login/"
+    oauth_endpoint = "/oauth-login/"
 
     def setUp(self):
         user = User.objects.create(username=user1["username"], email=user1["email"])
@@ -428,7 +429,7 @@ class LoginLogoutTest(BaseAccountsTest):
         user = User.objects.get(username=user1["username"])
 
         # normal valid login
-        expected={"detail": "User logged in."}
+        expected = {"detail": "User logged in."}
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(response.content.decode(), json.dumps(expected))
@@ -463,7 +464,7 @@ class LoginLogoutTest(BaseAccountsTest):
         self.user.save()
         # --------------------------
 
-        #disabled user account login
+        # disabled user account login
         expected = {'detail': 'User account is disabled.'}
         self.data.update({"password": user1["password1"], "username": user1["username"]})
         response = self.client.post(self.endpoint, self.data)
@@ -477,7 +478,7 @@ class LoginLogoutTest(BaseAccountsTest):
 
     @skipIf(not has_tokenauth, "rest_framework is not installed")
     def test_token_login_logout(self):
-        #token login
+        # token login
         self.data['login_type'] = 'token'
         response = self.client.post(self.endpoint, self.data)
         self.assertEqual(response.status_code, 200)
@@ -492,16 +493,18 @@ class LoginLogoutTest(BaseAccountsTest):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')
 
-        #TODO Test that user is actually logged out and tokens are revoked
+        # TODO Test that user is actually logged out and tokens are revoked
 
     @skipIf(not has_oauth2, "oauth2_provider is not installed")
     def test_oauth2_login_logout(self):
-        #oauth2 invalid client login
-        self.data.update({'login_type': 'oauth2', 'grant_type': 'password'})
-        response = self.client.post(self.endpoint, self.data)
+        # oauth2 invalid client login
+        del self.data['login_type']
+        self.data['grant_type'] = 'password'
+        response = self.client.post(self.oauth_endpoint, self.data)
+        print(response.content.decode())
         self.assertEqual(response.status_code, 401)
 
-        #oauth2 normal login
+        # oauth2 normal login
 
         # regular django login
         self.client.login(**self.data)
@@ -527,7 +530,7 @@ class LoginLogoutTest(BaseAccountsTest):
         }
 
         # send request
-        response = self.client.post(self.endpoint, self.data, **auth_headers)
+        response = self.client.post(self.oauth_endpoint, self.data, **auth_headers)
         print(response.status_code, response.content)
         self.assertEqual(response.status_code, 200)
 
@@ -538,7 +541,7 @@ class LoginLogoutTest(BaseAccountsTest):
 
 class PasswordChangeTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/password/"
+    endpoint = "/password/"
 
     def setUp(self):
         user = User.objects.create(username=user1['username'], email=user1['email'])
@@ -568,7 +571,7 @@ class PasswordChangeTest(BaseAccountsTest):
 
 class PasswordResetTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/password/reset/"
+    endpoint = "/password/reset/"
 
     def setUp(self):
         user = User.objects.create(username=user1['username'], email=user1['email'])
@@ -603,7 +606,7 @@ class PasswordResetTest(BaseAccountsTest):
 @override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
 class ImageKeyPasswordResetTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/password/reset/"
+    endpoint = "/password/reset/"
 
     def setUp(self):
         user = User.objects.create(username=user1['username'], email=user1['email'])
@@ -641,7 +644,7 @@ class ImageKeyPasswordResetTest(BaseAccountsTest):
 
 class PasswordResetConfirmationTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/password/reset/confirm/"
+    endpoint = "/password/reset/confirm/"
 
     def setUp(self):
         user = User.objects.create(username=user1['username'], email=user1['email'])
@@ -689,7 +692,7 @@ class PasswordResetConfirmationTest(BaseAccountsTest):
 @override_settings(ACCOUNT_ADAPTER='tests.accountadapter.ImageKeyTestAccountAdapter')
 class ImageKeyPasswordResetConfirmationTest(BaseAccountsTest):
     allowed_methods = ['OPTIONS', 'POST']
-    endpoint="/password/reset/confirm/"
+    endpoint = "/password/reset/confirm/"
 
     def setUp(self):
         user = User.objects.create(username=user1['username'], email=user1['email'])

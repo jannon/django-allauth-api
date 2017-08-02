@@ -13,25 +13,28 @@ def pytest_configure():
         STATIC_URL='/static/',
         STATIC_ROOT='src/allauth_api/static',
         ROOT_URLCONF='tests.urls',
-        TEMPLATE_LOADERS=(
-            'django.template.loaders.filesystem.Loader',
-            'django.template.loaders.app_directories.Loader',
-        ),
+        TEMPLATES = [
+            {
+                'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                'APP_DIRS': True,
+                'OPTIONS': {
+                    'context_processors': [
+                        'django.contrib.auth.context_processors.auth',
+                        # Required by allauth template tags and grappelli dashboard
+                        'django.core.context_processors.request',
+                        # allauth specific context processors
+                        'allauth.account.context_processors.account',
+                        'allauth.socialaccount.context_processors.socialaccount',
+                    ],
+                },
+            },
+        ],
         MIDDLEWARE_CLASSES=(
             'django.middleware.common.CommonMiddleware',
             'django.contrib.sessions.middleware.SessionMiddleware',
             'django.middleware.csrf.CsrfViewMiddleware',
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
-        ),
-        TEMPLATE_CONTEXT_PROCESSORS = (
-            'django.contrib.auth.context_processors.auth',
-            # Required by allauth template tags
-            'django.core.context_processors.request',
-
-            # allauth specific context processors
-            'allauth.account.context_processors.account',
-            'allauth.socialaccount.context_processors.socialaccount',
         ),
         INSTALLED_APPS=(
             'django.contrib.auth',
